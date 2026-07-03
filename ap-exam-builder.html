@@ -1,0 +1,3002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>A&amp;P Exam Builder, MedMasters Collaborative</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+:root{
+  /* PRIMARY teaching-stack palette, single source of truth = palettes.md */
+  --navy:#1E3D4C;           /* Primary text, headers, borders */
+  --navy-mid:#142A36;       /* Hover state on navy elements (navy-deep) */
+  --navy-tint:#EDF1F3;      /* Completed-state fill only */
+  --ink-soft:#1E3D4C;       /* Body text */
+  --ink-muted:#3D4860;      /* Secondary text, passes AA on off-white */
+  --terra:#A0522D;          /* Terra, text-safe (terra-dark) */
+  --terra-mid:#C2734D;      /* Terra cotta, hover/secondary, borders */
+  --terra-bright:#D98E6A;   /* Light terra for legibility on navy */
+  --terra-soft:rgba(160,82,45,.06);
+  --terra-tint:rgba(160,82,45,.12);
+  --gold:#B8924A;           /* Brushed gold, accents, on-target/AI */
+  --gold-bright:#E3C88A;    /* Light gold for legibility on navy */
+  --gold-text:#6E5018;
+  --gold-soft:rgba(184,146,74,.12);
+  --bg:#FFFFFF;
+  --bg-soft:#FAFAF9;
+  --bg-panel:#FFFFFF;
+  --rule:#B8BEC8;
+  --rule-soft:#DCE0E6;
+  --rule-faint:#E8EBEF;
+  --shadow-card:0 1px 3px rgba(30,61,76,.08);
+  --shadow-hover:0 8px 16px rgba(30,61,76,.10);
+  --radius:4px;
+  --radius-pill:99px;
+  --font-display:'Plus Jakarta Sans','Atkinson Hyperlegible',system-ui,sans-serif;
+  --font-body:'Atkinson Hyperlegible','Plus Jakarta Sans',system-ui,sans-serif;
+  --font-mono:ui-monospace,'SF Mono',Consolas,Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:var(--font-display);
+  background:var(--bg);
+  color:var(--ink-soft);
+  min-height:100vh;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  font-style:normal;
+}
+/* Kill italics globally per brand standard */
+em,i,cite,address,dfn,var{font-style:normal;}
+/* SKIP LINK */
+.skip-link{position:absolute;left:-9999px;top:0;background:var(--navy);color:#fff;padding:10px 16px;z-index:9999;font-weight:600;text-decoration:none;border-radius:var(--radius);}
+.skip-link:focus{left:8px;top:8px;}
+/* TOP NAV */
+.topnav{
+  background:var(--bg);
+  padding:14px 5%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid var(--rule-soft);
+}
+.brand-logo{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:1.05rem;
+  letter-spacing:.04em;
+  color:var(--navy);
+  text-transform:uppercase;
+}
+.brand-logo span{color:var(--terra);}
+.nav-tag{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+}
+/* HERO */
+.page-hero{
+  background:var(--bg);
+  border-bottom:1px solid var(--rule-soft);
+  padding:38px 5% 32px;
+}
+.page-hero-inner{
+  max-width:1400px;
+  margin:0 auto;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:22px;
+  flex-wrap:wrap;
+}
+.eyebrow{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--terra);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
+}
+.eyebrow::before{content:'';width:22px;height:2px;background:var(--terra);}
+.page-hero h1{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(34px,4.5vw,52px);
+  letter-spacing:-.02em;
+  color:var(--navy);
+  line-height:1.05;
+}
+.page-hero h1 .accent{color:var(--terra);}
+.page-hero p{
+  font-family:var(--font-body);
+  font-size:14.5px;
+  color:var(--ink-muted);
+  margin-top:12px;
+  font-weight:400;
+  line-height:1.65;
+  max-width:560px;
+}
+.hero-controls{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+.ctrl-group{display:flex;flex-direction:column;gap:6px;}
+.ctrl-label{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+}
+.ctrl-select{
+  background:var(--bg);
+  border:1px solid var(--rule);
+  color:var(--ink-soft);
+  font-family:var(--font-display);
+  font-size:13px;
+  font-weight:500;
+  padding:9px 32px 9px 12px;
+  outline:none;
+  cursor:pointer;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%233D4860' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 11px center;
+  border-radius:var(--radius);
+  transition:border-color .15s,box-shadow .15s;
+}
+.ctrl-select:focus{border-color:var(--terra);box-shadow:0 0 0 3px var(--terra-tint);}
+/* STATUS BAR */
+.statusbar{
+  background:var(--bg);
+  border-bottom:1px solid var(--rule-soft);
+  padding:10px 5%;
+  position:sticky;
+  top:0;
+  z-index:100;
+  box-shadow:0 1px 0 var(--rule-soft);
+}
+.statusbar-inner{
+  max-width:1400px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.status-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size:11px;
+  font-weight:600;
+  color:var(--terra);
+  background:var(--bg);
+  border:1px solid var(--terra);
+  border-radius:var(--radius-pill);
+  padding:4px 12px;
+}
+.status-dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--terra);
+  animation:blink 2.4s infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@media(prefers-reduced-motion:reduce){.status-dot{animation:none;}}
+.dif-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size:11px;
+  font-weight:600;
+  border:1px solid var(--rule);
+  border-radius:var(--radius-pill);
+  padding:4px 12px;
+}
+/* MAIN */
+.main{padding:22px 5% 64px;}
+.grid{
+  max-width:1400px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+/* PANELS */
+.panel{
+  background:var(--bg-panel);
+  border:1px solid var(--rule-soft);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-card);
+}
+.panel.t-accent{border-left:3px solid var(--terra);}
+.panel.n-accent{border-left:3px solid var(--navy);}
+.panel.g-accent{border-left:3px solid var(--gold);}
+.panel-head{
+  padding:14px 18px 12px;
+  border-bottom:1px solid var(--rule-soft);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.panel-head h2{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:17px;
+  letter-spacing:-.005em;
+  color:var(--navy);
+}
+.ph{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+}
+.panel-body{padding:18px;}
+/* SECTION EYEBROWS */
+.sec-ey{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--terra);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:10px;
+}
+.sec-ey::before{content:'';width:14px;height:2px;background:var(--terra);}
+.sec-ey.n{color:var(--navy);}
+.sec-ey.n::before{background:var(--navy);}
+.sec-ey.m{color:var(--ink-muted);}
+.sec-ey.m::before{background:var(--ink-muted);}
+/* FORM ELEMENTS */
+label.field-label{
+  display:block;
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--navy);
+  margin:12px 0 6px;
+}
+label.field-label:first-child{margin-top:0;}
+select,input[type="text"],input[type="number"]{
+  width:100%;
+  background:var(--bg);
+  border:1px solid var(--rule);
+  padding:10px 32px 10px 12px;
+  color:var(--ink-soft);
+  font-family:var(--font-display);
+  font-size:13.5px;
+  font-weight:500;
+  outline:none;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%233D4860' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+  border-radius:var(--radius);
+  transition:border-color .15s,box-shadow .15s;
+  cursor:pointer;
+}
+select:focus,input:focus,textarea:focus{
+  border-color:var(--terra);
+  box-shadow:0 0 0 3px var(--terra-tint);
+  outline:none;
+}
+select option{background:var(--bg);}
+input[type="text"],input[type="number"]{
+  background-image:none;
+  padding-right:12px;
+  cursor:text;
+}
+input[type="number"]{-moz-appearance:textfield;}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{opacity:0;}
+textarea{
+  width:100%;
+  min-height:180px;
+  background:var(--bg);
+  border:1px solid var(--rule);
+  border-radius:var(--radius);
+  padding:12px;
+  color:var(--ink-soft);
+  font-family:var(--font-body);
+  font-size:13.5px;
+  line-height:1.65;
+  resize:vertical;
+  outline:none;
+  transition:border-color .15s,box-shadow .15s;
+  font-weight:400;
+}
+textarea::placeholder{color:var(--ink-muted);opacity:.55;}
+/* CHECKBOX BLOCKS */
+.check{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  margin-top:8px;
+  padding:10px 12px;
+  background:var(--bg);
+  border:1px solid var(--rule-soft);
+  border-radius:var(--radius);
+  cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+.check:hover{border-color:var(--terra-mid);background:var(--terra-soft);}
+.check input[type="checkbox"]{
+  margin-top:2px;
+  flex-shrink:0;
+  width:15px;
+  height:15px;
+  accent-color:var(--terra);
+  cursor:pointer;
+}
+.check span{
+  font-size:13px;
+  color:var(--ink-soft);
+  line-height:1.5;
+  font-weight:500;
+}
+.divider{height:1px;background:var(--rule-soft);margin:16px 0;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:640px){.two-col{grid-template-columns:1fr;}}
+.info-box{
+  background:var(--bg-soft);
+  border:1px solid var(--rule-soft);
+  border-left:3px solid var(--ink-muted);
+  border-radius:var(--radius);
+  padding:12px 14px;
+  font-size:13px;
+  color:var(--ink-soft);
+  line-height:1.6;
+  font-weight:400;
+}
+.info-box strong{color:var(--navy);font-weight:700;}
+.info-box.terra{border-left-color:var(--terra);background:var(--terra-soft);}
+.info-box.gold{border-left-color:var(--gold);background:var(--gold-soft);}
+.info-box.navy{border-left-color:var(--navy);}
+/* DISCIPLINE TOGGLE */
+.disc-toggle{
+  display:flex;
+  border:1px solid var(--rule);
+  border-radius:var(--radius);
+  overflow:hidden;
+  margin-bottom:18px;
+}
+.disc-btn{
+  flex:1;
+  padding:11px 14px;
+  font-family:var(--font-display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  border:none;
+  background:var(--bg);
+  color:var(--ink-muted);
+  cursor:pointer;
+  transition:all .15s;
+  border-right:1px solid var(--rule);
+}
+.disc-btn:last-child{border-right:none;}
+.disc-btn.active{background:var(--navy);color:#fff;}
+.disc-btn:not(.active):hover{background:var(--bg-soft);color:var(--navy);}
+.disc-btn:focus-visible{outline:2px solid var(--terra);outline-offset:-2px;}
+/* SYSTEM CARDS */
+.sys-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:10px;
+}
+.sys-card{
+  border:1px solid var(--rule-soft);
+  border-radius:var(--radius);
+  background:var(--bg);
+  overflow:hidden;
+  transition:border-color .15s,background .15s;
+}
+.sys-card.selected{
+  border-color:var(--terra);
+  background:var(--terra-soft);
+}
+.sys-card-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px 13px;
+  cursor:pointer;
+}
+.sys-card-cb{
+  flex-shrink:0;
+  width:15px !important;
+  height:15px;
+  accent-color:var(--terra);
+  cursor:pointer;
+  background-image:none;
+  padding:0;
+  border-radius:3px;
+  appearance:auto;
+}
+.sys-card-name{
+  flex:1;
+  font-size:13px;
+  font-weight:600;
+  color:var(--navy);
+}
+.sys-disc-badges{display:flex;gap:4px;}
+.disc-badge-sm{
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.5px;
+  padding:2px 7px;
+  border-radius:var(--radius-pill);
+  white-space:nowrap;
+}
+.disc-badge-sm.a{background:var(--terra-soft);color:var(--terra);border:1px solid var(--terra-tint);}
+.disc-badge-sm.p{background:var(--gold-soft);color:var(--gold-text);border:1px solid rgba(184,146,74,.3);}
+.disc-badge-sm.ap{background:var(--navy);color:#fff;}
+/* CUSTOMIZE TRIGGER */
+.customize-trigger{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:7px 13px 8px;
+  background:none;
+  border:none;
+  border-top:1px solid var(--rule-soft);
+  cursor:pointer;
+  font-family:var(--font-display);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+  transition:color .15s,background .15s;
+}
+.customize-trigger:hover,
+.sys-card.selected .customize-trigger{color:var(--terra);}
+.customize-trigger:hover{background:var(--terra-soft);}
+.customize-trigger:focus-visible{outline:2px solid var(--terra);outline-offset:-2px;}
+.cust-chevron{transition:transform .18s;flex-shrink:0;}
+.cust-chevron.open{transform:rotate(180deg);}
+.customize-panel{
+  border-top:1px solid var(--rule-soft);
+  padding:10px 13px 12px;
+  background:var(--bg-soft);
+  display:none;
+}
+.customize-panel.open{display:block;}
+.cust-note{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+  margin-bottom:10px;
+}
+.cust-disc-label{
+  font-size:9.5px;
+  font-weight:700;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  margin:10px 0 5px;
+}
+.cust-disc-label:first-of-type{margin-top:0;}
+.cust-disc-label.a{color:var(--terra);}
+.cust-disc-label.p{color:var(--gold-text);}
+.sub-item{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  padding:5px 6px;
+  border-radius:3px;
+  cursor:pointer;
+  transition:background .12s;
+}
+.sub-item:hover{background:var(--terra-soft);}
+.sub-item-cb{
+  flex-shrink:0;
+  width:13px !important;
+  height:13px;
+  accent-color:var(--terra);
+  margin-top:3px;
+  appearance:auto;
+  background-image:none;
+  padding:0;
+  border-radius:2px;
+}
+.sub-item-body{flex:1;min-width:0;}
+.sub-item-label{
+  font-size:12px;
+  color:var(--navy);
+  font-weight:600;
+  line-height:1.35;
+}
+.sub-item-desc{
+  font-size:11px;
+  color:var(--ink-muted);
+  line-height:1.4;
+  margin-top:2px;
+  font-family:var(--font-body);
+}
+.sub-item:has(.sub-item-cb:not(:checked)) .sub-item-label{
+  color:var(--ink-muted);
+  text-decoration:line-through;
+}
+.sub-item:has(.sub-item-cb:checked) .sub-item-label{color:var(--terra);}
+/* SELECT ALL ROW */
+.sys-select-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.sys-select-btns{display:flex;gap:6px;}
+.sys-mini-btn{
+  font-family:var(--font-display);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  background:var(--bg);
+  border:1px solid var(--rule);
+  border-radius:var(--radius-pill);
+  padding:5px 12px;
+  color:var(--ink-muted);
+  cursor:pointer;
+  transition:all .15s;
+}
+.sys-mini-btn:hover{
+  border-color:var(--terra);
+  color:var(--terra);
+  background:var(--terra-soft);
+}
+.sys-mini-btn:focus-visible{outline:2px solid var(--terra);outline-offset:2px;}
+/* SPECIFIC QUESTIONS ACCORDION */
+.sq-toggle{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  background:none;
+  border:none;
+  cursor:pointer;
+  padding:12px 0 6px;
+  font-family:var(--font-display);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--terra);
+  transition:color .15s;
+}
+.sq-toggle:hover{color:var(--terra-mid);}
+.sq-toggle:focus-visible{outline:2px solid var(--terra);outline-offset:2px;}
+.sq-count-badge{
+  background:var(--terra);
+  color:#fff;
+  font-size:10px;
+  font-weight:700;
+  padding:2px 9px;
+  border-radius:var(--radius-pill);
+}
+.sq-chevron{transition:transform .2s;}
+.sq-chevron.open{transform:rotate(180deg);}
+.sq-body{margin-top:10px;}
+/* MC SCORING TOGGLE */
+.mc-mode-toggle{
+  display:flex;
+  border:1px solid var(--rule);
+  border-radius:var(--radius);
+  overflow:hidden;
+  margin-bottom:10px;
+}
+.mc-mode-btn{
+  flex:1;
+  padding:10px 12px;
+  font-family:var(--font-display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  border:none;
+  background:var(--bg);
+  color:var(--ink-muted);
+  cursor:pointer;
+  transition:all .15s;
+  border-right:1px solid var(--rule);
+}
+.mc-mode-btn:last-child{border-right:none;}
+.mc-mode-btn.active{background:var(--navy);color:#fff;}
+.mc-mode-btn:not(.active):hover{background:var(--bg-soft);color:var(--navy);}
+.mc-mode-btn:focus-visible{outline:2px solid var(--terra);outline-offset:-2px;}
+/* BRAIN DUMP FORMAT TOGGLE */
+.bd-format-toggle{
+  display:flex;
+  border:1px solid var(--rule);
+  border-radius:var(--radius);
+  overflow:hidden;
+  margin-bottom:10px;
+}
+.bd-format-btn{
+  flex:1;
+  padding:10px 12px;
+  font-family:var(--font-display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  border:none;
+  background:var(--bg);
+  color:var(--ink-muted);
+  cursor:pointer;
+  transition:all .15s;
+  border-right:1px solid var(--rule);
+}
+.bd-format-btn:last-child{border-right:none;}
+.bd-format-btn.active{background:var(--terra);color:#fff;}
+.bd-format-btn:not(.active):hover{background:var(--terra-soft);color:var(--terra);}
+.bd-format-btn:focus-visible{outline:2px solid var(--navy);outline-offset:-2px;}
+/* POINTS */
+.pts-row{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;}
+.pts-input{
+  width:68px!important;
+  padding:8px 10px!important;
+  text-align:center;
+  background-image:none!important;
+  padding-right:10px!important;
+  font-weight:600!important;
+}
+.pts-label{font-size:13px;color:var(--ink-muted);white-space:nowrap;font-weight:500;}
+.pts-total-bar{
+  margin-top:18px;
+  padding:16px 20px;
+  background:var(--navy);
+  border-radius:var(--radius);
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+}
+.pts-total-label{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.5);
+}
+.pts-total-num{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:34px;
+  letter-spacing:-.02em;
+  color:#fff;
+  line-height:1;
+}
+.pts-total-num .unit{
+  font-size:13px;
+  font-weight:500;
+  color:rgba(255,255,255,.55);
+  margin-left:7px;
+  letter-spacing:0;
+}
+.pts-breakdown{
+  margin-left:auto;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.pts-pill{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:rgba(255,255,255,.7);
+  background:rgba(255,255,255,.08);
+  border-radius:var(--radius-pill);
+  padding:4px 11px;
+  white-space:nowrap;
+  border:1px solid rgba(255,255,255,.1);
+}
+.pts-pill strong{color:#fff;}
+/* EXAM DETAILS GRID */
+.details-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr 1fr;
+  gap:14px;
+}
+@media(max-width:900px){.details-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:540px){.details-grid{grid-template-columns:1fr;}}
+/* DIFFICULTY TARGET */
+.dif-target-section{
+  background:var(--navy);
+  border-radius:var(--radius);
+  padding:20px 22px;
+  margin-bottom:16px;
+}
+.dif-target-head{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.55);
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.dif-target-head::after{
+  content:'';
+  flex:1;
+  height:1px;
+  background:rgba(255,255,255,.12);
+}
+.dif-target-main{
+  display:flex;
+  align-items:flex-start;
+  gap:22px;
+  flex-wrap:wrap;
+}
+.dif-target-input-wrap{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  flex-shrink:0;
+}
+.dif-target-input{
+  width:100px;
+  background:rgba(255,255,255,.08);
+  border:2px solid rgba(255,255,255,.18);
+  border-radius:var(--radius);
+  padding:10px 14px;
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:38px;
+  color:#fff;
+  text-align:center;
+  outline:none;
+  -moz-appearance:textfield;
+  transition:border-color .18s;
+  letter-spacing:-.02em;
+}
+.dif-target-input:focus{border-color:var(--terra-bright);}
+.dif-target-input::placeholder{color:rgba(255,255,255,.22);}
+.dif-target-input::-webkit-inner-spin-button,
+.dif-target-input::-webkit-outer-spin-button{opacity:0;}
+.dif-target-slash{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:26px;
+  color:rgba(255,255,255,.3);
+}
+.dif-target-100{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:26px;
+  color:rgba(255,255,255,.25);
+}
+.dif-target-info{flex:1;min-width:200px;}
+.dif-target-band{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:22px;
+  color:var(--gold-bright);
+  margin-bottom:6px;
+  letter-spacing:-.005em;
+}
+.dif-target-desc{
+  font-family:var(--font-body);
+  font-size:12.5px;
+  color:rgba(255,255,255,.55);
+  line-height:1.6;
+  font-weight:400;
+}
+.dif-compare-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+.dif-compare-card{
+  flex:1;
+  min-width:120px;
+  padding:11px 13px;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:var(--radius);
+}
+.dif-compare-label{
+  font-size:9.5px;
+  font-weight:600;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.45);
+  margin-bottom:6px;
+}
+.dif-compare-num{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:30px;
+  color:rgba(255,255,255,.28);
+  line-height:1;
+  letter-spacing:-.02em;
+}
+.dif-compare-num.live{color:var(--terra-bright);}
+.dif-compare-num.match{color:var(--gold-bright);}
+.dif-compare-num.miss{color:var(--terra-bright);}
+.dif-compare-status{
+  font-size:11px;
+  font-weight:500;
+  margin-top:5px;
+  color:rgba(255,255,255,.4);
+}
+.dif-compare-status.ok{color:var(--gold-bright);}
+.dif-compare-status.miss{color:var(--terra-bright);}
+/* TRACK */
+.dif-track-wrap{margin:16px 0 8px;}
+.dif-track{
+  width:100%;
+  height:8px;
+  background:var(--rule-faint);
+  border-radius:var(--radius-pill);
+  overflow:hidden;
+}
+.dif-fill{
+  height:100%;
+  border-radius:var(--radius-pill);
+  transition:width .4s cubic-bezier(.4,0,.2,1),background .4s;
+}
+.dif-legend{
+  display:flex;
+  gap:0;
+  font-size:9px;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--ink-muted);
+  margin-top:6px;
+}
+.dif-legend span{flex:1;text-align:center;}
+.dif-breakdown{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin:10px 0;
+}
+.dif-seg{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--navy);
+  background:var(--bg-soft);
+  border:1px solid var(--rule-soft);
+  border-radius:var(--radius-pill);
+  padding:3px 10px;
+  white-space:nowrap;
+}
+/* VERSION SECTION */
+.ver-section{
+  padding:14px 16px;
+  border:1px solid var(--rule);
+  border-radius:var(--radius);
+  margin-top:14px;
+  background:var(--bg-soft);
+}
+.ver-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.ver-title{
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--navy);
+}
+.ver-hint{
+  font-family:var(--font-body);
+  font-size:12px;
+  color:var(--ink-muted);
+  font-weight:400;
+}
+.ver-btns{display:flex;gap:6px;}
+.ver-btn{
+  width:40px;
+  height:40px;
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:18px;
+  border:1px solid var(--rule);
+  background:var(--bg);
+  color:var(--ink-muted);
+  border-radius:var(--radius);
+  cursor:pointer;
+  transition:all .15s;
+}
+.ver-btn.active{background:var(--terra);border-color:var(--terra);color:#fff;}
+.ver-btn:not(.active):hover{border-color:var(--terra);color:var(--terra);background:var(--terra-soft);}
+.ver-btn:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
+/* DIFFICULTY PILLS */
+.dif-target-pills{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin:12px 0;
+}
+.dif-pill{
+  flex:1;
+  min-width:80px;
+  padding:8px 10px;
+  border:1px solid var(--rule);
+  border-radius:var(--radius);
+  background:var(--bg);
+  font-family:var(--font-display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-align:center;
+  cursor:pointer;
+  color:var(--ink-muted);
+  transition:all .15s;
+  line-height:1.35;
+}
+.dif-pill:hover{border-color:var(--navy);color:var(--navy);}
+.dif-pill.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+.dif-pill:focus-visible{outline:2px solid var(--terra);outline-offset:2px;}
+/* DIFFICULTY SUGGEST */
+.dif-suggest{
+  display:none;
+  padding:12px 14px;
+  background:var(--gold-soft);
+  border:1px solid rgba(184,146,74,.3);
+  border-left:3px solid var(--gold);
+  border-radius:var(--radius);
+  margin-top:12px;
+}
+.dif-suggest-head{
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--gold-text);
+  margin-bottom:8px;
+}
+.dif-suggest-text{
+  font-family:var(--font-body);
+  font-size:13px;
+  color:var(--ink-soft);
+  line-height:1.65;
+  font-weight:400;
+}
+/* GUIDE CARDS */
+.dif-guide-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:14px;
+}
+@media(max-width:640px){.dif-guide-grid{grid-template-columns:1fr;}}
+.dif-guide-row{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  background:var(--bg);
+  border:1px solid var(--rule-soft);
+  border-radius:var(--radius);
+  padding:11px;
+  transition:border-color .15s,background .15s;
+}
+.dif-guide-row.highlight{
+  border-color:var(--terra);
+  background:var(--terra-soft);
+}
+.dif-guide-band{
+  width:4px;
+  min-height:44px;
+  border-radius:var(--radius-pill);
+  flex-shrink:0;
+  margin-top:2px;
+}
+.dif-guide-body{flex:1;}
+.dif-guide-title{
+  font-size:12px;
+  font-weight:700;
+  color:var(--navy);
+  margin-bottom:4px;
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.dif-guide-range{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  font-weight:500;
+  color:var(--ink-muted);
+}
+.dif-guide-desc{
+  font-family:var(--font-body);
+  font-size:11.5px;
+  color:var(--ink-soft);
+  line-height:1.55;
+  font-weight:400;
+}
+/* ACTIONS */
+.actions-row{grid-column:1/-1;}
+.actions-inner{
+  padding:18px 18px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.btn-primary{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:var(--navy);
+  color:#fff;
+  font-family:var(--font-display);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  border:1px solid var(--navy);
+  border-radius:var(--radius);
+  padding:14px 28px;
+  cursor:pointer;
+  transition:background .15s,border-color .15s,transform .08s;
+}
+.btn-primary:hover{background:var(--navy-mid);border-color:var(--navy-mid);}
+.btn-primary:active{transform:translateY(1px);}
+.btn-primary:focus-visible{outline:2px solid var(--terra);outline-offset:2px;}
+.btn-terra{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:var(--terra);
+  color:#fff;
+  font-family:var(--font-display);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  border:1px solid var(--terra);
+  border-radius:var(--radius);
+  padding:14px 28px;
+  cursor:pointer;
+  transition:background .15s,border-color .15s,transform .08s;
+}
+.btn-terra:hover{background:var(--terra-mid);border-color:var(--terra-mid);}
+.btn-terra:active{transform:translateY(1px);}
+.btn-terra:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
+.btn-secondary{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:var(--bg);
+  color:var(--navy);
+  font-family:var(--font-display);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  border:1px solid var(--navy);
+  border-radius:var(--radius);
+  padding:12px 22px;
+  cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.btn-secondary:hover{background:var(--navy);color:#fff;}
+.btn-secondary:focus-visible{outline:2px solid var(--terra);outline-offset:2px;}
+.btn-sm{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:var(--bg);
+  color:var(--ink-soft);
+  font-family:var(--font-display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.1em;
+  border:1px solid var(--rule);
+  border-radius:var(--radius);
+  padding:7px 12px;
+  cursor:pointer;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.btn-sm:hover{background:var(--bg-soft);border-color:var(--navy);}
+.btn-sm.terra{
+  border-color:var(--terra);
+  color:var(--terra);
+}
+.btn-sm.terra:hover{background:var(--terra-soft);}
+.btn-sep{
+  width:1px;
+  height:28px;
+  background:var(--rule);
+  margin:0 4px;
+}
+.paste-note{
+  font-family:var(--font-body);
+  font-size:12.5px;
+  color:var(--ink-muted);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-weight:400;
+}
+.kbd{
+  font-family:var(--font-mono);
+  font-size:11px;
+  background:var(--bg-soft);
+  border:1px solid var(--rule);
+  border-bottom-width:2px;
+  padding:2px 6px;
+  border-radius:3px;
+  color:var(--navy);
+  font-weight:600;
+}
+/* MODAL */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:999;
+  background:rgba(30,61,76,.55);
+  backdrop-filter:blur(4px);
+  padding:16px;
+  align-items:flex-start;
+  justify-content:center;
+}
+.modal.open{display:flex;}
+.modal-box{
+  width:100%;
+  max-width:900px;
+  margin-top:3vh;
+  background:var(--bg);
+  border:1px solid var(--rule);
+  border-top:3px solid var(--terra);
+  border-radius:var(--radius);
+  box-shadow:0 24px 60px rgba(30,61,76,.25);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  max-height:92vh;
+  animation:su .25s ease;
+}
+@keyframes su{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.modal-box{animation:none;}}
+.modal-head{
+  padding:14px 18px;
+  border-bottom:1px solid var(--rule-soft);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-shrink:0;
+}
+.modal-head h3{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:17px;
+  color:var(--navy);
+}
+.modal-close{
+  width:30px;
+  height:30px;
+  border:1px solid var(--rule);
+  background:var(--bg);
+  border-radius:var(--radius);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  font-size:16px;
+  color:var(--ink-muted);
+  transition:all .15s;
+}
+.modal-close:hover{color:var(--navy);border-color:var(--navy);}
+.modal-close:focus-visible{outline:2px solid var(--terra);outline-offset:2px;}
+.prompt-modal-body{
+  padding:14px 16px;
+  max-height:65vh;
+  overflow:auto;
+  background:var(--bg-soft);
+}
+.prompt-modal-body pre{
+  font-family:var(--font-mono);
+  font-size:12px;
+  line-height:1.7;
+  color:var(--ink-soft);
+  white-space:pre-wrap;
+}
+.modal-foot{
+  padding:14px 16px;
+  border-top:1px solid var(--rule-soft);
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+  flex-shrink:0;
+  background:var(--bg);
+}
+/* TOAST */
+.toast{
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--navy);
+  color:#fff;
+  font-family:var(--font-display);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  padding:13px 24px;
+  border-radius:var(--radius);
+  border-left:3px solid var(--terra);
+  opacity:0;
+  transition:opacity .25s,transform .25s;
+  pointer-events:none;
+  z-index:9999;
+  white-space:nowrap;
+  box-shadow:0 8px 30px rgba(30,61,76,.3);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* FOOTER */
+.page-footer{
+  background:var(--bg-soft);
+  border-top:1px solid var(--rule-soft);
+  padding:28px 5%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.foot-brand{
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:1.05rem;
+  letter-spacing:.04em;
+  color:var(--navy);
+  text-transform:uppercase;
+}
+.foot-brand span{color:var(--terra);}
+.foot-meta{
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.18em;
+  color:var(--terra);
+  text-transform:uppercase;
+}
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--rule);border-radius:var(--radius-pill);}
+::-webkit-scrollbar-thumb:hover{background:var(--ink-muted);}
+/* FILE UPLOAD */
+.upload-zone{
+  border:2px dashed var(--rule);
+  border-radius:var(--radius);
+  padding:24px 18px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .2s;
+  background:var(--bg-soft);
+  position:relative;
+}
+.upload-zone:hover,
+.upload-zone.drag-over{
+  border-color:var(--terra);
+  background:var(--terra-soft);
+}
+.upload-zone input[type="file"]{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  width:100%;
+  height:100%;
+  cursor:pointer;
+  background-image:none;
+  border:none;
+  padding:0;
+}
+.upload-zone-icon{
+  font-size:30px;
+  margin-bottom:8px;
+  opacity:.55;
+}
+.upload-zone-label{
+  font-size:13.5px;
+  font-weight:600;
+  color:var(--navy);
+}
+.upload-zone-sub{
+  font-family:var(--font-body);
+  font-size:12px;
+  color:var(--ink-muted);
+  margin-top:4px;
+  font-weight:400;
+}
+.upload-file-list{
+  margin-top:12px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.upload-file-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:var(--bg);
+  border:1px solid var(--rule-soft);
+  border-radius:var(--radius);
+  padding:8px 12px;
+  font-size:12.5px;
+  color:var(--ink-soft);
+}
+.upload-file-name{
+  flex:1;
+  font-weight:600;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--navy);
+}
+.upload-file-size{
+  font-size:11px;
+  color:var(--ink-muted);
+  flex-shrink:0;
+  font-family:var(--font-mono);
+}
+.upload-file-status{
+  font-size:10px;
+  padding:3px 9px;
+  border-radius:var(--radius-pill);
+  flex-shrink:0;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.upload-file-status.ok{background:var(--gold-soft);color:var(--gold-text);}
+.upload-file-status.err{background:var(--terra-soft);color:var(--terra);}
+.upload-file-status.reading{background:var(--bg-soft);color:var(--ink-muted);}
+.upload-remove{
+  background:none;
+  border:none;
+  color:var(--ink-muted);
+  cursor:pointer;
+  font-size:16px;
+  line-height:1;
+  padding:2px 4px;
+  flex-shrink:0;
+  border-radius:3px;
+}
+.upload-remove:hover{color:var(--terra);background:var(--terra-soft);}
+.upload-remove:focus-visible{outline:2px solid var(--terra);outline-offset:1px;}
+/* BD CHART NESTED OPTION */
+.bd-nested-opt{
+  margin-top:12px;
+  padding:12px 14px;
+  background:var(--bg-soft);
+  border:1px solid var(--rule-soft);
+  border-radius:var(--radius);
+}
+/* ===== BUILD-FROM-OUTPUT (paste-back) ===== */
+.build-step-note{
+  font-family:var(--font-body);
+  font-size:13px;
+  color:var(--ink-soft);
+  line-height:1.65;
+  font-weight:400;
+  margin-bottom:12px;
+}
+.build-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+.build-result{
+  display:none;
+  margin-top:18px;
+  border-top:1px solid var(--rule-soft);
+  padding-top:18px;
+}
+.build-result.show{display:block;}
+.build-verify{
+  background:var(--navy-tint);
+  border:1px solid var(--navy);
+  border-radius:var(--radius);
+  padding:12px 14px;
+  font-size:12.5px;
+  color:var(--navy);
+  line-height:1.6;
+  font-weight:500;
+  margin-bottom:14px;
+}
+.build-verify strong{font-weight:700;}
+.build-verify .dist{font-family:var(--font-mono);}
+.build-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.build-tab{
+  font-family:var(--font-display);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  background:var(--bg);
+  border:1px solid var(--rule);
+  border-radius:var(--radius);
+  padding:8px 14px;
+  color:var(--ink-muted);
+  cursor:pointer;
+  transition:all .15s;
+}
+.build-tab.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+.build-tab:focus-visible{outline:2px solid var(--terra);outline-offset:2px;}
+.exam-preview{
+  background:#fff;
+  border:1px solid var(--rule);
+  border-radius:var(--radius);
+  padding:34px 40px;
+  max-height:600px;
+  overflow:auto;
+  font-family:'Georgia','Times New Roman',serif;
+  color:#111;
+  font-size:14px;
+  line-height:1.5;
+}
+.exam-preview h1{font-size:22px;font-weight:700;color:#111;margin-bottom:2px;font-family:var(--font-display);}
+.exam-preview .exam-sub{font-size:13px;color:#333;margin-bottom:4px;}
+.exam-preview .exam-fields{font-size:13px;color:#333;margin:14px 0 4px;border-bottom:1px solid #000;padding-bottom:12px;}
+.exam-preview h2{font-size:16px;font-weight:700;color:#111;margin:22px 0 4px;border-bottom:1.5px solid #000;padding-bottom:3px;font-family:var(--font-display);}
+.exam-preview .directions{font-size:12.5px;color:#222;font-weight:600;margin:6px 0 12px;}
+.exam-preview ol{margin:0;padding-left:0;list-style:none;}
+.exam-preview .q{margin-bottom:14px;page-break-inside:avoid;}
+.exam-preview .q-num{font-weight:700;}
+.exam-preview .opt{margin:3px 0 3px 26px;}
+.exam-preview .blank{display:inline-block;min-width:34px;border-bottom:1px solid #000;margin-right:8px;text-align:center;}
+.exam-preview .fibline{display:inline-block;min-width:180px;border-bottom:1px solid #000;}
+.exam-preview .writeline{border-bottom:1px solid #444;height:22px;margin:6px 0;}
+.exam-preview table{border-collapse:collapse;width:100%;margin:8px 0 4px;}
+.exam-preview th,.exam-preview td{border:1px solid #000;padding:6px 8px;font-size:12.5px;text-align:left;vertical-align:top;}
+.exam-preview th{background:#f0f0f0;font-weight:700;}
+.exam-preview .match-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.exam-preview .keyline{margin-bottom:8px;font-size:13px;}
+.exam-preview .keyline .kdok{color:#555;font-size:11px;font-weight:600;}
+.exam-preview .keyrat{color:#333;font-size:12px;margin-left:18px;}
+/* ANIMATIONS */
+.fi{animation:fi .42s ease both;}
+.fi:nth-child(2){animation-delay:.07s;}
+.fi:nth-child(3){animation-delay:.13s;}
+.fi:nth-child(4){animation-delay:.19s;}
+.fi:nth-child(5){animation-delay:.24s;}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+  .fi{animation:none;}
+  *{transition-duration:.01ms !important;}
+}
+@media print{
+  .topnav,.page-hero,.statusbar,.main,.page-footer,.modal-head,.modal-foot,.modal-close{display:none!important;}
+  .modal.open{position:static;background:none;padding:0;}
+  .modal-box{max-height:none;box-shadow:none;border:none;}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+<nav class="topnav" aria-label="Primary">
+  <div class="brand-logo">Med<span>Masters</span> Collaborative</div>
+  <div class="nav-tag">Exam Builder</div>
+</nav>
+<header class="page-hero">
+  <div class="page-hero-inner">
+    <div>
+      <p class="eyebrow">Anatomy &amp; Physiology</p>
+      <h1>A&amp;P <span class="accent">Exam</span> Builder</h1>
+      <p>Configure the exam, generate the questions, then paste the output back to build a print-ready exam and instructor key. The tool rebuilds the answer key itself, so counts and answer distribution are verified, not left to the AI.</p>
+    </div>
+    <div class="hero-controls">
+      <div class="ctrl-group">
+        <label class="ctrl-label" for="formatStyle">Format</label>
+        <select class="ctrl-select" id="formatStyle">
+          <option value="clean" selected>Clean, print-ready</option>
+          <option value="booklet">Booklet (more spacing)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="statusbar" role="status" aria-live="polite">
+  <div class="statusbar-inner">
+    <div class="status-chip"><div class="status-dot" aria-hidden="true"></div><span id="modeBadge">Build mode, student exam plus instructor key</span></div>
+    <div class="dif-chip" id="statusDifChip" style="display:none;"></div>
+  </div>
+</div>
+<main class="main" id="main-content">
+<div class="grid">
+  <!-- (1) CONTENT & TOPICS -->
+  <section class="panel t-accent fi" aria-labelledby="panel-content">
+    <div class="panel-head">
+      <h2 id="panel-content">Content &amp; Topics</h2>
+      <span class="ph" id="topicCountDisplay" aria-live="polite">0 subtopics selected</span>
+    </div>
+    <div class="panel-body" style="display:flex;flex-direction:column;gap:0;">
+      <p class="sec-ey">Learning Outcomes</p>
+      <label class="sr-only" for="learningOutcomes" style="position:absolute;left:-9999px;">Module learning outcomes</label>
+      <textarea id="learningOutcomes" placeholder="Paste your module learning outcomes, lecture notes, or key content here.&#10;&#10;Example:&#10;Identify the six extrinsic eye muscles and their actions.&#10;Describe the origin, insertion, and action of the rotator cuff muscles.&#10;Explain the sliding filament theory of muscle contraction."></textarea>
+      <p style="font-family:var(--font-body);font-size:12px;color:var(--ink-muted);margin-top:6px;margin-bottom:16px;">The AI writes questions that directly test these outcomes.</p>
+      <p class="sec-ey" style="margin-bottom:8px;">Upload Source Materials <span style="font-family:var(--font-body);font-weight:400;color:var(--ink-muted);text-transform:none;letter-spacing:0;font-size:11.5px;">(PDF or Word, AI reads directly from your files)</span></p>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept=".pdf,.doc,.docx" multiple aria-label="Upload source material files">
+        <div class="upload-zone-icon" aria-hidden="true">&#x1F4C4;</div>
+        <div class="upload-zone-label">Drag &amp; drop files here, or click to browse</div>
+        <div class="upload-zone-sub">Accepts PDF, .doc, .docx. Combined with pasted notes and sent in the prompt.</div>
+      </div>
+      <div class="upload-file-list" id="uploadFileList" aria-live="polite"></div>
+      <p style="font-family:var(--font-body);font-size:12px;color:var(--ink-muted);margin-top:8px;margin-bottom:16px;">Uploaded content is combined with your pasted notes above and included directly in the prompt.</p>
+      <div class="divider" style="margin:0 0 16px;"></div>
+      <p class="sec-ey">Discipline</p>
+      <div class="disc-toggle" id="discToggle" role="group" aria-label="Discipline focus">
+        <button class="disc-btn" data-disc="anatomy" type="button">Anatomy</button>
+        <button class="disc-btn active" data-disc="both" type="button">Both A&amp;P</button>
+        <button class="disc-btn" data-disc="physiology" type="button">Physiology</button>
+      </div>
+      <p class="sec-ey" style="margin-bottom:6px;">
+        Body Systems
+        <span style="font-family:var(--font-body);font-weight:400;color:var(--ink-muted);text-transform:none;letter-spacing:0;font-size:11.5px;margin-left:4px;">, check to include, expand to omit subtopics</span>
+      </p>
+      <div class="sys-select-row">
+        <div style="font-family:var(--font-body);font-size:12px;color:var(--ink-muted);" id="discNote">Showing Anatomy plus Physiology subtopics</div>
+        <div class="sys-select-btns">
+          <button class="sys-mini-btn" id="selectAllSys" type="button">Select all</button>
+          <button class="sys-mini-btn" id="clearAllSys" type="button">Clear all</button>
+        </div>
+      </div>
+      <div class="sys-grid" id="sysGrid" role="group" aria-label="Body systems to include"></div>
+      <div class="divider" style="margin:18px 0 0;"></div>
+      <button class="sq-toggle" id="sqToggle" aria-expanded="false" aria-controls="sqBody" type="button">
+        <span style="display:flex;align-items:center;gap:8px;">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 7h6M7 4v6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Include specific questions
+        </span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="sq-count-badge" id="sqCount" style="display:none;"></span>
+          <svg class="sq-chevron" id="sqChevron" width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true"><path d="M2 4l3.5 3.5L9 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </button>
+      <div class="sq-body" id="sqBody" style="display:none;">
+        <div class="info-box terra" style="margin-bottom:10px;font-size:12.5px;margin-top:8px;">
+          Paste questions to include. Label each: <strong>TF:</strong>, <strong>MC:</strong>, <strong>MATCH:</strong>, or <strong>FR:</strong>
+        </div>
+        <textarea id="sqInput" style="min-height:120px;font-size:12.5px;" placeholder="MC: Which rotator cuff muscle inserts on the lesser tubercle?&#10;  A. Infraspinatus  B. Supraspinatus  C. Subscapularis  D. Teres minor&#10;&#10;TF: The biceps brachii inserts on the radius." aria-label="Specific questions to include"></textarea>
+        <p style="font-family:var(--font-body);font-size:12px;color:var(--ink-muted);margin-top:6px;">Pasted: <span id="sqCountDisplay">0</span> question(s)</p>
+      </div>
+    </div>
+  </section>
+  <!-- (2) QUESTION SECTIONS -->
+  <section class="panel n-accent fi" style="animation-delay:.08s" aria-labelledby="panel-sections">
+    <div class="panel-head">
+      <h2 id="panel-sections">Question Sections</h2>
+      <span class="ph">Counts plus DOK levels</span>
+    </div>
+    <div class="panel-body">
+      <!-- T/F -->
+      <p class="sec-ey">True / False</p>
+      <div class="two-col">
+        <div>
+          <label class="field-label" for="tfCount">Question count</label>
+          <select id="tfCount"><option>0</option><option>10</option><option>20</option><option>25</option><option>50</option></select>
+          <label class="field-label" for="tfDOK">DOK level</label>
+          <select id="tfDOK"><option>Balanced (50% DOK 2, 50% DOK 3)</option><option>DOK 1</option><option>DOK 2</option><option>DOK 3</option><option>DOK 4</option><option>Random</option></select>
+          <label class="check"><input type="checkbox" id="tfNoDup" checked/><span>Prevent duplicate topics</span></label>
+        </div>
+        <div>
+          <div class="info-box">
+            <strong>Bonus word format:</strong> One key term per statement is bolded and underlined. For false statements, correcting only that term earns 0.5 pt bonus. The answer key lists the correction for every false item.
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- MC -->
+      <p class="sec-ey n">Multiple Choice</p>
+      <div class="two-col">
+        <div>
+          <label class="field-label" for="mcCount">Question count</label>
+          <select id="mcCount"><option>0</option><option>10</option><option>20</option><option>40</option><option>50</option><option>60</option><option>80</option><option>100</option></select>
+          <label class="field-label" for="mcDOK">DOK level</label>
+          <select id="mcDOK"><option>Balanced (50% DOK 2, 50% DOK 3)</option><option>DOK 1</option><option>DOK 2</option><option>DOK 3</option><option>DOK 4</option><option>Random</option></select>
+          <label class="check"><input type="checkbox" id="mcNoDup" checked/><span>Prevent duplicate topics</span></label>
+        </div>
+        <div>
+          <label class="field-label">Scoring format</label>
+          <div class="mc-mode-toggle" role="group" aria-label="Multiple choice scoring format">
+            <button class="mc-mode-btn active" id="mcModeConf" type="button">Confidence-based</button>
+            <button class="mc-mode-btn" id="mcModeStd" type="button">Standard</button>
+          </div>
+          <div class="info-box terra" id="mcInfoConf" style="font-size:12.5px;">
+            <strong>Confidence-based:</strong> Students distribute 4 points across the options. Full directions printed on exam.
+          </div>
+          <div class="info-box" id="mcInfoStd" style="display:none;font-size:12.5px;">
+            <strong>Standard:</strong> Students circle the best answer. No blanks in front of options.
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- MATCHING -->
+      <p class="sec-ey">Matching</p>
+      <div class="two-col">
+        <div>
+          <label class="field-label" for="matchSets">Number of sets</label>
+          <select id="matchSets"><option>0</option><option selected>1</option><option>2</option><option>3</option></select>
+          <label class="field-label" for="matchDOK">DOK level</label>
+          <select id="matchDOK"><option>Balanced (50% DOK 2, 50% DOK 3)</option><option>DOK 1</option><option>DOK 2</option><option>DOK 3</option><option>DOK 4</option><option>Random</option></select>
+          <label class="check"><input type="checkbox" id="matchNoDup" checked/><span>Prevent duplicate topics</span></label>
+        </div>
+        <div>
+          <p class="sec-ey m" style="margin-bottom:6px;">Custom topics (optional)</p>
+          <label class="field-label" for="matchTopic1" style="margin-top:0;">Set 1 topic</label>
+          <input type="text" id="matchTopic1" placeholder="e.g. Rotator cuff muscles and their actions"/>
+          <label class="field-label" for="matchTopic2">Set 2 topic</label>
+          <input type="text" id="matchTopic2" placeholder="e.g. Heart structures and their functions"/>
+          <label class="field-label" for="matchTopic3">Set 3 topic</label>
+          <input type="text" id="matchTopic3" placeholder="e.g. Coronary arteries and regions supplied"/>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- FIB -->
+      <p class="sec-ey">Fill in the Blank</p>
+      <div class="two-col">
+        <div>
+          <label class="field-label" for="fibCount">Question count</label>
+          <select id="fibCount"><option selected>0</option><option>5</option><option>10</option><option>15</option><option>20</option><option>25</option></select>
+          <label class="field-label" for="fibDOK">DOK level</label>
+          <select id="fibDOK"><option>Balanced (50% DOK 2, 50% DOK 3)</option><option>DOK 1</option><option>DOK 2</option><option>DOK 3</option><option>DOK 4</option><option>Random</option></select>
+          <label class="check"><input type="checkbox" id="fibNoDup" checked/><span>Prevent duplicate topics</span></label>
+        </div>
+        <div>
+          <div class="info-box">
+            <strong>Fill in the blank format:</strong> Each sentence has one key term replaced with a blank line. The missing word is always a high-yield scientific term, value, or structure, never a common word. Answer key lists the correct term for every blank.
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- FREE RESPONSE / BRAIN DUMP -->
+      <p class="sec-ey n">Free Response / Brain Dump</p>
+      <div class="two-col">
+        <div>
+          <label class="field-label" for="bdCount">Prompt count</label>
+          <select id="bdCount"><option>0</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+          <label class="field-label" for="bdDOK">DOK level</label>
+          <select id="bdDOK"><option>Balanced (50% DOK 2, 50% DOK 3)</option><option>DOK 1</option><option>DOK 2</option><option>DOK 3</option><option>DOK 4</option><option>Random</option></select>
+          <label class="field-label">Response format</label>
+          <div class="bd-format-toggle" role="group" aria-label="Brain dump response format">
+            <button class="bd-format-btn active" id="bdFormatAll" type="button">Answer ALL</button>
+            <button class="bd-format-btn" id="bdFormatOne" type="button">Choose ONE</button>
+          </div>
+          <div class="info-box terra" id="bdFormatOneInfo" style="display:none;font-size:12.5px;margin-top:8px;">
+            <strong>Choose ONE:</strong> All prompts are printed but students answer only ONE. Directions and points reflect the single-prompt total. Useful for student choice on essay sections.
+          </div>
+        </div>
+        <div>
+          <p class="sec-ey m" style="margin-bottom:6px;">Brain Dump options</p>
+          <label class="check"><input type="checkbox" id="brainDumpChart" checked/><span>Include chart tables to complete</span></label>
+          <div class="bd-nested-opt" id="bdChartCountWrap" style="display:none;">
+            <label class="field-label" for="bdChartCount" style="margin-top:0;">How many questions include a chart?</label>
+            <select id="bdChartCount">
+              <option value="all">All questions</option>
+            </select>
+          </div>
+          <div class="info-box gold" style="margin-top:10px;font-size:12.5px;">
+            Each question is a standalone free response prompt. Chart questions get a bordered table (columns chosen by topic). Non-chart questions get 5 or 6 blank writing lines.
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="info-box terra" style="font-size:12.5px;">
+        <strong>Answer distribution:</strong> The AI writes the correct answer for each MC item. This tool then shuffles the option order client-side, rebuilds the letter for each answer, reports the actual A/B/C/D spread, guarantees no letter repeats more than twice in a row, and prints a key rebuilt from that shuffle. DOK levels are labeled and carried through to the key.
+      </div>
+    </div>
+  </section>
+  <!-- (3) EXAM DETAILS -->
+  <section class="panel t-accent fi" style="animation-delay:.13s" aria-labelledby="panel-details">
+    <div class="panel-head">
+      <h2 id="panel-details">Exam Details &amp; Point Values</h2>
+      <span class="ph">Printed on header plus used in key</span>
+    </div>
+    <div class="panel-body">
+      <div class="details-grid">
+        <div><label class="field-label" for="examTitle">Exam / module title</label><input type="text" id="examTitle" placeholder="e.g. Module 3 Exam"/></div>
+        <div><label class="field-label" for="courseName">Course name</label><input type="text" id="courseName" placeholder="e.g. Anatomy &amp; Physiology I"/></div>
+        <div><label class="field-label" for="termName">Term / semester</label><input type="text" id="termName" placeholder="e.g. Spring 2026"/></div>
+        <div><label class="field-label" for="instructorName">Instructor</label><input type="text" id="instructorName" placeholder="e.g. Dr. Sharilyn Rennie"/></div>
+      </div>
+      <div class="divider"></div>
+      <p class="sec-ey m" style="margin-bottom:10px;">Points per question</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px;">
+        <div><label class="field-label" for="ptsTF" style="margin-top:0;">T/F (each)</label><div class="pts-row"><input type="number" id="ptsTF" class="pts-input" value="1" min="0" step="0.5"/><span class="pts-label">pt</span></div></div>
+        <div><label class="field-label" for="ptsMC" style="margin-top:0;">MC (each)</label><div class="pts-row"><input type="number" id="ptsMC" class="pts-input" value="1" min="0" step="0.5"/><span class="pts-label">pt</span></div></div>
+        <div><label class="field-label" for="ptsMatch" style="margin-top:0;">Matching (each)</label><div class="pts-row"><input type="number" id="ptsMatch" class="pts-input" value="1" min="0" step="0.5"/><span class="pts-label">pt</span></div></div>
+        <div><label class="field-label" for="ptsFIB" style="margin-top:0;">FIB (each)</label><div class="pts-row"><input type="number" id="ptsFIB" class="pts-input" value="1" min="0" step="0.5"/><span class="pts-label">pt</span></div></div>
+        <div><label class="field-label" for="ptsFR" style="margin-top:0;">FR (each)</label><div class="pts-row"><input type="number" id="ptsFR" class="pts-input" value="10" min="0" step="1"/><span class="pts-label">pts</span></div></div>
+      </div>
+      <div class="pts-total-bar">
+        <div>
+          <div class="pts-total-label">Total points</div>
+          <div class="pts-total-num" id="ptsTotalNum">&ndash;<span class="unit">set section counts above</span></div>
+        </div>
+        <div class="pts-breakdown" id="ptsBreakdown"></div>
+      </div>
+    </div>
+  </section>
+  <!-- (4) DIFFICULTY TARGET -->
+  <section class="panel n-accent fi" style="animation-delay:.18s" aria-labelledby="panel-dif">
+    <div class="panel-head">
+      <h2 id="panel-dif">Difficulty Target</h2>
+      <span class="ph">Consistent across exam versions</span>
+    </div>
+    <div class="panel-body">
+      <div class="dif-target-section">
+        <div class="dif-target-head">Difficulty Target</div>
+        <div class="dif-target-main">
+          <div class="dif-target-input-wrap">
+            <label class="sr-only" for="difTargetInput" style="position:absolute;left:-9999px;">Difficulty target number</label>
+            <input type="number" class="dif-target-input" id="difTargetInput" min="1" max="100" placeholder="62"/>
+            <div class="dif-target-slash" aria-hidden="true">/</div>
+            <div class="dif-target-100" aria-hidden="true">100</div>
+          </div>
+          <div class="dif-target-info">
+            <div class="dif-target-band" id="difTargetBand">&ndash;</div>
+            <div class="dif-target-desc">Sets the DOK composition mix sent to the AI. Same target across versions guarantees equivalent cognitive demand, making retests and make-ups defensibly comparable. Not a prediction of class average.</div>
+          </div>
+        </div>
+        <div class="dif-compare-row">
+          <div class="dif-compare-card">
+            <div class="dif-compare-label">DT Set</div>
+            <div class="dif-compare-num" id="difTargetDisplay">&ndash;</div>
+          </div>
+          <div class="dif-compare-card">
+            <div class="dif-compare-label">Calculated from DOK</div>
+            <div class="dif-compare-num live" id="difCalcNum">&ndash;</div>
+            <div class="dif-compare-status" id="difCalcStatus">Set question counts to calculate</div>
+          </div>
+          <div class="dif-compare-card" id="difMatchCard" style="display:none;">
+            <div class="dif-compare-label">Status</div>
+            <div class="dif-compare-num" id="difMatchNum">&ndash;</div>
+            <div class="dif-compare-status" id="difMatchText">&ndash;</div>
+          </div>
+        </div>
+      </div>
+      <p class="sec-ey m" style="margin-bottom:8px;">Quick-pick by exam type</p>
+      <div class="dif-target-pills" role="group" aria-label="Difficulty quick picks">
+        <button class="dif-pill" data-target="20" type="button">Recall<br><span style="font-size:9.5px;opacity:.65;font-weight:500;">below 30</span></button>
+        <button class="dif-pill" data-target="40" type="button">Foundational<br><span style="font-size:9.5px;opacity:.65;font-weight:500;">30 to 50</span></button>
+        <button class="dif-pill" data-target="62" type="button">Moderate<br><span style="font-size:9.5px;opacity:.65;font-weight:500;">51 to 70</span></button>
+        <button class="dif-pill" data-target="78" type="button">Challenging<br><span style="font-size:9.5px;opacity:.65;font-weight:500;">71 to 85</span></button>
+        <button class="dif-pill" data-target="92" type="button">Advanced<br><span style="font-size:9.5px;opacity:.65;font-weight:500;">above 85</span></button>
+      </div>
+      <div class="dif-track-wrap">
+        <div class="dif-track" role="progressbar" aria-label="Calculated difficulty" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="dif-fill" id="difFill" style="width:0%;background:var(--terra);"></div>
+        </div>
+        <div class="dif-legend"><span>Recall</span><span>Foundational</span><span>Moderate</span><span>Challenging</span><span>Advanced</span></div>
+      </div>
+      <div class="dif-breakdown" id="difBreakdown"></div>
+      <div class="dif-suggest" id="difSuggest">
+        <div class="dif-suggest-head">How to reach your target</div>
+        <div class="dif-suggest-text" id="difSuggestText"></div>
+      </div>
+      <div class="ver-section">
+        <div class="ver-head">
+          <div class="ver-title">Exam Version</div>
+          <div class="ver-hint">Each version generates different questions at the same DI</div>
+        </div>
+        <div class="ver-btns" id="verBtns" role="group" aria-label="Exam version">
+          <button class="ver-btn active" data-ver="1" type="button" aria-label="Version 1">1</button>
+          <button class="ver-btn" data-ver="2" type="button" aria-label="Version 2">2</button>
+          <button class="ver-btn" data-ver="3" type="button" aria-label="Version 3">3</button>
+          <button class="ver-btn" data-ver="4" type="button" aria-label="Version 4">4</button>
+          <button class="ver-btn" data-ver="5" type="button" aria-label="Version 5">5</button>
+        </div>
+        <p style="font-family:var(--font-body);font-size:12px;color:var(--ink-muted);margin-top:10px;">The AI is instructed to produce completely fresh questions for each version number. Same difficulty, different content, no repeated stems or scenarios.</p>
+      </div>
+      <p class="sec-ey m" style="margin-top:18px;margin-bottom:10px;">Recommended ranges by exam type</p>
+      <div class="dif-guide-grid" id="difGuideGrid">
+        <div class="dif-guide-row" data-min="0" data-max="30"><div class="dif-guide-band" style="background:var(--ink-muted);"></div><div class="dif-guide-body"><div class="dif-guide-title">Recall <span class="dif-guide-range">below 30</span></div><div class="dif-guide-desc">Orientation quizzes, pre-tests, first-week check-ins. Pure terminology and anatomy identification.</div></div></div>
+        <div class="dif-guide-row" data-min="31" data-max="50"><div class="dif-guide-band" style="background:var(--gold);"></div><div class="dif-guide-body"><div class="dif-guide-title">Foundational <span class="dif-guide-range">30 to 50</span></div><div class="dif-guide-desc">Weekly module quizzes, early-semester unit checks. Mix of recall and basic application.</div></div></div>
+        <div class="dif-guide-row" data-min="51" data-max="70"><div class="dif-guide-band" style="background:var(--terra-mid);"></div><div class="dif-guide-body"><div class="dif-guide-title">Moderate <span class="dif-guide-range">51 to 70</span></div><div class="dif-guide-desc">Standard unit exams and midterms. Recommended default for most A&amp;P I and II summative exams.</div></div></div>
+        <div class="dif-guide-row" data-min="71" data-max="85"><div class="dif-guide-band" style="background:var(--terra);"></div><div class="dif-guide-body"><div class="dif-guide-title">Challenging <span class="dif-guide-range">71 to 85</span></div><div class="dif-guide-desc">Cumulative finals, comprehensive midterms. Heavy DOK 2 to 3 synthesis across systems. Use when you want meaningful separation between prepared and unprepared students.</div></div></div>
+        <div class="dif-guide-row" data-min="86" data-max="100" style="grid-column:1/-1;"><div class="dif-guide-band" style="background:var(--navy);"></div><div class="dif-guide-body"><div class="dif-guide-title">Advanced <span class="dif-guide-range">above 85</span></div><div class="dif-guide-desc">Pre-professional prep, USMLE/NCLEX practice, doctoral-level integrative exams. Heavy DOK 3 to 4. Not recommended for standard A&amp;P without scaffolding.</div></div></div>
+      </div>
+    </div>
+  </section>
+  <!-- (5) STEP 1: GENERATE PROMPT -->
+  <section class="panel t-accent actions-row fi" style="animation-delay:.22s" aria-labelledby="panel-actions">
+    <div class="panel-head">
+      <h2 id="panel-actions">Step 1, Generate Questions</h2>
+      <span class="ph">Prompt asks the AI for a structured block</span>
+    </div>
+    <div class="panel-body">
+      <p class="build-step-note">Click a button below to copy the prompt and open the AI. Paste with <span class="kbd">Ctrl+V</span> or <span class="kbd">Cmd+V</span>. The prompt asks the AI to return a single fenced code block. Copy that whole block and bring it back to Step 2.</p>
+      <div class="build-actions">
+        <button class="btn-primary" id="genChatGPT" type="button">Copy prompt &amp; open ChatGPT</button>
+        <button class="btn-terra" id="genClaude" type="button">Copy prompt &amp; open Claude</button>
+        <div class="btn-sep"></div>
+        <button class="btn-secondary" id="previewPrompt" type="button">Preview prompt</button>
+      </div>
+    </div>
+  </section>
+  <!-- (6) STEP 2: BUILD FROM OUTPUT -->
+  <section class="panel n-accent actions-row fi" style="animation-delay:.26s" aria-labelledby="panel-build">
+    <div class="panel-head">
+      <h2 id="panel-build">Step 2, Build the Exam</h2>
+      <span class="ph">Paste the AI output, get exam plus key</span>
+    </div>
+    <div class="panel-body">
+      <p class="build-step-note">Paste the AI's reply here. You can paste the whole message, the tool finds the code block on its own. It then rebuilds the answer key, shuffles the multiple-choice options into a verified A/B/C/D spread, and renders a print-ready exam and instructor key you can print or download as Word files.</p>
+      <label class="sr-only" for="pasteBackInput" style="position:absolute;left:-9999px;">AI output to build the exam from</label>
+      <textarea id="pasteBackInput" style="min-height:150px;font-family:var(--font-mono);font-size:12px;" placeholder="Paste the AI's full reply here. The fenced code block that starts with { and ends with } is all the tool needs, but pasting the whole message is fine."></textarea>
+      <div class="build-actions">
+        <button class="btn-primary" id="buildExamBtn" type="button">Build exam &amp; key</button>
+        <button class="btn-sm" id="loadSampleBtn" type="button">Load a sample</button>
+      </div>
+      <div class="build-result" id="buildResult" aria-live="polite">
+        <div class="build-verify" id="buildVerify"></div>
+        <div class="build-tabs" role="group" aria-label="Preview which document">
+          <button class="build-tab active" id="tabStudent" type="button">Student Exam</button>
+          <button class="build-tab" id="tabKey" type="button">Answer Key</button>
+        </div>
+        <div class="build-actions" style="margin-top:0;margin-bottom:14px;">
+          <button class="btn-secondary" id="printBtn" type="button">Print / Save PDF</button>
+          <button class="btn-sm terra" id="dlStudent" type="button">Download Student (.doc)</button>
+          <button class="btn-sm terra" id="dlKey" type="button">Download Answer Key (.doc)</button>
+        </div>
+        <div class="exam-preview" id="examPreview"></div>
+      </div>
+    </div>
+  </section>
+</div>
+</main>
+<footer class="page-footer">
+  <div class="foot-brand">Med<span>Masters</span> Collaborative</div>
+  <div class="foot-meta">Dr. Sharilyn Rennie &nbsp;|&nbsp; Founder and Learning Architect</div>
+</footer>
+<!-- PROMPT PREVIEW MODAL -->
+<div id="promptModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="promptModalTitle" aria-hidden="true">
+  <div class="modal-box" style="max-width:820px;">
+    <div class="modal-head">
+      <h3 id="promptModalTitle">Prompt Preview</h3>
+      <button class="modal-close" id="closePrompt" type="button" aria-label="Close prompt preview">&#215;</button>
+    </div>
+    <div class="prompt-modal-body"><pre id="promptOutput"></pre></div>
+    <div class="modal-foot">
+      <button class="btn-sm terra" id="selectAllBtn" type="button">Select All Text</button>
+      <button class="btn-secondary" id="copyPromptBtn" type="button">Copy to clipboard</button>
+      <button class="btn-terra" id="openClaudeBtn" type="button">Open Claude</button>
+      <button class="btn-primary" id="openGptBtn" type="button">Open ChatGPT</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+/* ====================================================================
+   SYSTEMS DATA
+   ==================================================================== */
+const SYSTEMS=[
+  {id:"cardiovascular",name:"Cardiovascular",
+   anatomy:[
+    {id:"cv-a-blood",label:"Blood",desc:"formed elements, plasma proteins, cell identification",full:"Blood (Anatomy): formed elements (RBCs, WBCs, platelets), plasma proteins, blood cell structure and identification"},
+    {id:"cv-a-heart",label:"Heart",desc:"chambers, valves, wall layers, coronary vessels",full:"Heart (Anatomy): chambers, valves, heart wall layers, coronary vessels, great vessels, pericardium"},
+    {id:"cv-a-vessels",label:"Blood Vessels, Structure",desc:"vessel types, tunica layers, histology",full:"Blood Vessels, Structure: artery/vein/capillary types, tunica intima/media/externa layers, vessel wall histology"},
+    {id:"cv-a-head",label:"BV: Head & Neck",desc:"carotids, vertebrals, Circle of Willis, jugular veins",full:"BV, Head & Neck: common/internal/external carotid arteries, vertebral arteries, Circle of Willis, jugular veins"},
+    {id:"cv-a-thorax",label:"BV: Thorax",desc:"aortic arch, pulmonary, coronary, azygos, vena cava",full:"BV, Thorax: aortic arch branches, pulmonary trunk and veins, coronary arteries, azygos/hemiazygos, vena cava"},
+    {id:"cv-a-abdomen",label:"BV: Abdomen",desc:"abdominal aorta, celiac, SMA/IMA, portal system",full:"BV, Abdomen: abdominal aorta branches (celiac trunk, SMA, IMA, renal, gonadal), hepatic portal system"},
+    {id:"cv-a-pelvis",label:"BV: Pelvis",desc:"iliac vessels, pelvic organ branches",full:"BV, Pelvis: common iliac to internal/external iliac arteries and veins, pelvic organ branches"},
+    {id:"cv-a-ue",label:"BV: Upper Extremity",desc:"subclavian to radial/ulnar, palmar arches, veins",full:"BV, Upper Extremity: subclavian to axillary to brachial to radial/ulnar arteries, palmar arches, cephalic/basilic veins"},
+    {id:"cv-a-le",label:"BV: Lower Extremity",desc:"femoral to tibial to dorsalis pedis, saphenous veins",full:"BV, Lower Extremity: femoral to popliteal to anterior/posterior tibial to dorsalis pedis; great/small saphenous veins"},
+   ],
+   physiology:[
+    {id:"cv-p-blood",label:"Blood",desc:"hematopoiesis, coagulation, ABO/Rh, gas transport",full:"Blood (Physiology): hematopoiesis, coagulation cascade, ABO/Rh blood typing, oxygen and CO₂ transport"},
+    {id:"cv-p-heart",label:"Heart",desc:"cardiac cycle, conduction, ECG, cardiac output",full:"Heart (Physiology): cardiac cycle, conduction system (SA/AV node, Purkinje), ECG, Frank-Starling law, cardiac output"},
+    {id:"cv-p-vessels",label:"Blood Vessels, Function",desc:"BP regulation, resistance, capillary exchange",full:"Blood Vessels (Physiology): blood pressure regulation, peripheral resistance, capillary exchange (Starling forces), autoregulation, venous return"},
+   ]},
+  {id:"muscular",name:"Muscular",
+   anatomy:[
+    {id:"mu-a-micro",label:"Muscle Microanatomy",desc:"sarcomere, connective layers, T-tubules, fiber types",full:"Muscle Microanatomy: sarcomere structure, connective tissue layers (epimysium/perimysium/endomysium), T-tubules, SR, fiber type identification"},
+    {id:"mu-a-ue",label:"Upper Extremity Muscles",desc:"shoulder, rotator cuff, arm, forearm, hand",full:"Upper Extremity Muscles: shoulder girdle, rotator cuff, arm, forearm, hand; origins, insertions, actions, innervations"},
+    {id:"mu-a-thorax",label:"Thorax Muscles",desc:"intercostals, diaphragm, pectorals, scalenes",full:"Thorax Muscles: intercostals, diaphragm, pectorals, serratus anterior, scalenes; origins, insertions, actions"},
+    {id:"mu-a-face",label:"Face & Scalp Muscles",desc:"facial expression, mastication, CN V & VII",full:"Face & Scalp Muscles: muscles of facial expression, mastication, scalp; CN V and VII innervation"},
+    {id:"mu-a-eye",label:"Extrinsic Eye Muscles",desc:"6 extraocular muscles, actions, CN III/IV/VI",full:"Extrinsic Eye Muscles: the 6 extraocular muscles, origins, insertions, actions, CN III/IV/VI innervation"},
+    {id:"mu-a-le",label:"Lower Extremity Muscles",desc:"gluteal, hip, thigh, leg, foot",full:"Lower Extremity Muscles: gluteal region, hip flexors, anterior/posterior/medial thigh compartments, leg compartments, foot; origins, insertions, actions"},
+   ],
+   physiology:[
+    {id:"mu-p-physio",label:"Muscle Physiology",desc:"sliding filament, E-C coupling, NMJ, motor units, fatigue",full:"Muscle Physiology: sliding filament theory, excitation-contraction coupling, neuromuscular junction, motor units, twitch summation, fatigue"},
+   ]},
+  {id:"skeletal",name:"Skeletal",
+   anatomy:[
+    {id:"sk-a-micro",label:"Bone Microanatomy",desc:"osteon, bone cells, canals, periosteum, matrix",full:"Bone Microanatomy: osteon structure, central/perforating canals, osteoblasts/osteoclasts/osteocytes, periosteum, bone matrix composition"},
+    {id:"sk-a-axial",label:"Axial Skeleton",desc:"skull, vertebral column, thoracic cage, landmarks",full:"Axial Skeleton: skull bones and sutures, vertebral column regions and features, intervertebral discs, thoracic cage, bony landmarks"},
+    {id:"sk-a-append",label:"Appendicular Skeleton",desc:"girdles, upper & lower limb bones, landmarks",full:"Appendicular Skeleton: pectoral and pelvic girdles, upper and lower limb bones, bony landmarks, sexual dimorphism of pelvis"},
+    {id:"sk-a-joints",label:"Joints, Anatomy",desc:"classification, synovial components, named joints",full:"Joints (Anatomy): structural classification (fibrous/cartilaginous/synovial), synovial joint components, bursae, specific named joints"},
+   ],
+   physiology:[
+    {id:"sk-p-bone",label:"Bone Physiology",desc:"remodeling, ossification, calcium, PTH/calcitonin",full:"Bone Physiology: bone remodeling cycle, ossification (intramembranous/endochondral), calcium homeostasis, PTH and calcitonin roles"},
+    {id:"sk-p-joints",label:"Joints, Physiology",desc:"ROM, movement types, stability vs mobility",full:"Joints (Physiology): range of motion, types of movement (flexion/extension/abduction etc.), joint stability vs mobility, proprioception"},
+   ]},
+  {id:"nervous",name:"Nervous",
+   anatomy:[
+    {id:"nv-a-neuron",label:"Neuron & Nerve Anatomy",desc:"neuron types, glial cells, myelination, nerve anatomy",full:"Neuron & Nerve Anatomy: neuron structural types, glial cell types and roles, nerve fiber classification, myelination, nerve trunk anatomy"},
+    {id:"nv-a-cns",label:"CNS Anatomy",desc:"brain lobes, brainstem, cerebellum, spinal cord, meninges",full:"CNS Anatomy: brain lobes and regions, diencephalon, brainstem, cerebellum, spinal cord tracts, meninges, ventricles"},
+    {id:"nv-a-pns",label:"PNS Anatomy",desc:"12 cranial nerves, spinal nerves, plexuses",full:"PNS Anatomy: 12 cranial nerves (name, number, type, target), spinal nerves, brachial and lumbosacral plexus structure"},
+   ],
+   physiology:[
+    {id:"nv-p-neuro",label:"Neurophysiology",desc:"action potentials, synaptic transmission, neurotransmitters",full:"Neurophysiology: resting membrane potential, action potentials, graded potentials, synaptic transmission, neurotransmitters, reflex arcs"},
+    {id:"nv-p-cns",label:"CNS Physiology",desc:"brain function, CSF, BBB, sensory/motor pathways",full:"CNS Physiology: functional brain regions, CSF circulation, blood-brain barrier, sensory/motor pathway function"},
+    {id:"nv-p-ans",label:"ANS Physiology",desc:"sympathetic/parasympathetic, neurotransmitters, organ effects",full:"ANS Physiology: sympathetic vs parasympathetic divisions, fight-or-flight vs rest-and-digest, neurotransmitters, target organ effects"},
+   ]},
+  {id:"respiratory",name:"Respiratory",
+   anatomy:[{id:"rs-a",label:"Respiratory, Anatomy",desc:"airways, lung lobes, pleura, alveolar structure",full:"Respiratory Anatomy: nasal cavity, pharynx, larynx, trachea, bronchial tree, lung lobes, pleura, alveolar structure"}],
+   physiology:[{id:"rs-p",label:"Respiratory, Physiology",desc:"ventilation, gas exchange, transport, volumes, control",full:"Respiratory Physiology: ventilation mechanics, gas exchange (Dalton/Henry laws), oxygen/CO₂ transport, lung volumes and capacities, chemoreceptor control"}]},
+  {id:"digestive",name:"Digestive",
+   anatomy:[{id:"dg-a",label:"Digestive, Anatomy",desc:"GI wall layers, regions, accessory organ structure",full:"Digestive Anatomy: GI tract wall layers and regions (esophagus through large intestine), liver/gallbladder/pancreas structure, peritoneum"}],
+   physiology:[{id:"dg-p",label:"Digestive, Physiology",desc:"digestion, absorption, motility, enzymes, hormones",full:"Digestive Physiology: mechanical and chemical digestion, absorption mechanisms, gut motility, digestive enzymes and hormones"}]},
+  {id:"urinary",name:"Urinary",
+   anatomy:[{id:"ur-a",label:"Urinary, Anatomy",desc:"kidney, nephron segments, JGA, bladder, urethra",full:"Urinary Anatomy: kidney gross and microscopic anatomy, nephron segments, juxtaglomerular apparatus, ureter/bladder/urethra"}],
+   physiology:[{id:"ur-p",label:"Urinary, Physiology",desc:"filtration, reabsorption, urine concentration, RAAS",full:"Urinary Physiology: glomerular filtration, tubular reabsorption and secretion, urine concentration, fluid-electrolyte balance, RAAS"}]},
+  {id:"endocrine",name:"Endocrine",
+   anatomy:[{id:"en-a",label:"Endocrine, Anatomy",desc:"gland locations, histology, structure",full:"Endocrine Anatomy: gland locations, histology, and structure (pituitary, thyroid, parathyroid, adrenal, pancreas, gonads, pineal)"}],
+   physiology:[{id:"en-p",label:"Endocrine, Physiology",desc:"hormones, feedback, HPA axis, target effects",full:"Endocrine Physiology: hormone classes, receptor mechanisms, negative/positive feedback, hypothalamic-pituitary axis, major hormones and target effects"}]},
+  {id:"lymphatic",name:"Lymphatic / Immune",
+   anatomy:[{id:"ly-a",label:"Lymphatic, Anatomy",desc:"lymph vessels, nodes, thymus, spleen, tonsils",full:"Lymphatic Anatomy: lymphatic vessels, lymph nodes, thymus, spleen, tonsils, MALT structure and distribution"}],
+   physiology:[{id:"ly-p",label:"Immune, Physiology",desc:"innate/adaptive, lymphocytes, antibodies, complement",full:"Immune Physiology: innate vs adaptive immunity, lymphocyte types (T-cells, B-cells, NK cells), antibody production, complement system, inflammation"}]},
+  {id:"integumentary",name:"Integumentary",
+   anatomy:[{id:"ig-a",label:"Integumentary, Anatomy",desc:"epidermis strata, dermis, appendage structure",full:"Integumentary Anatomy: epidermis layers (strata), dermis regions, hypodermis, hair follicle, nail, sweat/sebaceous gland structure"}],
+   physiology:[{id:"ig-p",label:"Integumentary, Physiology",desc:"thermoregulation, sensation, vitamin D, wound healing",full:"Integumentary Physiology: thermoregulation, cutaneous sensation, vitamin D synthesis, wound healing phases, barrier function"}]},
+  {id:"reproductive",name:"Reproductive",
+   anatomy:[{id:"rp-a",label:"Reproductive, Anatomy",desc:"male & female structures, mammary glands",full:"Reproductive Anatomy: male reproductive structures (testes, epididymis, vas deferens, accessory glands, penis), female structures (ovaries, uterine tubes, uterus, vagina), mammary glands"}],
+   physiology:[{id:"rp-p",label:"Reproductive, Physiology",desc:"gametogenesis, hormones, menstrual cycle, fertilization",full:"Reproductive Physiology: spermatogenesis and oogenesis, hormonal regulation (GnRH/LH/FSH), menstrual cycle phases, fertilization and implantation basics"}]},
+];
+/* ====================================================================
+   STATE
+   ==================================================================== */
+var currentDisc="both";
+var currentVersion=1;
+var currentDifTarget=null;
+var _difCurrent=null;
+var _mcMode="confidence";
+var _bdFormat="all"; // "all" or "one"
+var _builtDocs=null; // {studentHtml,keyHtml} after a successful build
+var _activeTab="student";
+/* ====================================================================
+   RENDER SYSTEM CARDS
+   ==================================================================== */
+function renderSystems(){
+  var disc=currentDisc;
+  var grid=$("sysGrid");
+  var savedChecked={};
+  grid.querySelectorAll(".sys-card-cb").forEach(function(cb){ savedChecked[cb.dataset.sysId]=cb.checked; });
+  var savedSubs={};
+  grid.querySelectorAll(".sub-item-cb").forEach(function(cb){ savedSubs[cb.id]=cb.checked; });
+  grid.innerHTML="";
+  SYSTEMS.forEach(function(sys){
+    var hasA=sys.anatomy&&sys.anatomy.length>0;
+    var hasP=sys.physiology&&sys.physiology.length>0;
+    var showA=(disc==="anatomy"||disc==="both")&&hasA;
+    var showP=(disc==="physiology"||disc==="both")&&hasP;
+    if(!showA&&!showP)return;
+    var badgeHtml="";
+    if(showA&&showP) badgeHtml='<span class="disc-badge-sm ap">A+P</span>';
+    else if(showA)   badgeHtml='<span class="disc-badge-sm a">A</span>';
+    else if(showP)   badgeHtml='<span class="disc-badge-sm p">P</span>';
+    var custHtml='<div class="cust-note">All included by default. Uncheck to omit.</div>';
+    if(showA&&hasA){
+      if(disc==="both") custHtml+='<div class="cust-disc-label a">Anatomy</div>';
+      sys.anatomy.forEach(function(sub){
+        var prev=savedSubs.hasOwnProperty("sub-"+sub.id)?savedSubs["sub-"+sub.id]:true;
+        custHtml+='<label class="sub-item"><input class="sub-item-cb" type="checkbox" id="sub-'+sub.id+'"'+(prev?" checked":"")+'><div class="sub-item-body"><div class="sub-item-label">'+sub.label+'</div><div class="sub-item-desc">'+sub.desc+'</div></div></label>';
+      });
+    }
+    if(showP&&hasP){
+      if(disc==="both") custHtml+='<div class="cust-disc-label p">Physiology</div>';
+      sys.physiology.forEach(function(sub){
+        var prev=savedSubs.hasOwnProperty("sub-"+sub.id)?savedSubs["sub-"+sub.id]:true;
+        custHtml+='<label class="sub-item"><input class="sub-item-cb" type="checkbox" id="sub-'+sub.id+'"'+(prev?" checked":"")+'><div class="sub-item-body"><div class="sub-item-label">'+sub.label+'</div><div class="sub-item-desc">'+sub.desc+'</div></div></label>';
+      });
+    }
+    var isChecked=savedChecked.hasOwnProperty(sys.id)?savedChecked[sys.id]:false;
+    var card=document.createElement("div");
+    card.className="sys-card"+(isChecked?" selected":"");
+    card.innerHTML=
+      '<div class="sys-card-head">'+
+        '<input class="sys-card-cb" type="checkbox" data-sys-id="'+sys.id+'"'+(isChecked?" checked":"")+' aria-label="Include '+sys.name+'">'+
+        '<div class="sys-card-name">'+sys.name+'</div>'+
+        '<div class="sys-disc-badges">'+badgeHtml+'</div>'+
+      '</div>'+
+      '<button class="customize-trigger" data-sys-id="'+sys.id+'" type="button" aria-expanded="false" aria-controls="cust-'+sys.id+'">'+
+        'Customize subtopics'+
+        '<svg class="cust-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'+
+      '</button>'+
+      '<div class="customize-panel" id="cust-'+sys.id+'">'+custHtml+'</div>';
+    grid.appendChild(card);
+    var cb=card.querySelector(".sys-card-cb");
+    cb.addEventListener("change",function(){
+      card.classList.toggle("selected",this.checked);
+      updateCount();
+    });
+    var trig=card.querySelector(".customize-trigger");
+    var panel=card.querySelector(".customize-panel");
+    var chev=card.querySelector(".cust-chevron");
+    trig.addEventListener("click",function(e){
+      e.stopPropagation();
+      var open=panel.classList.contains("open");
+      panel.classList.toggle("open",!open);
+      chev.classList.toggle("open",!open);
+      trig.setAttribute("aria-expanded",String(!open));
+    });
+    card.querySelectorAll(".sub-item-cb").forEach(function(scb){
+      scb.addEventListener("change",updateCount);
+    });
+    card.querySelector(".sys-card-head").addEventListener("click",function(e){
+      if(e.target!==cb){cb.checked=!cb.checked;card.classList.toggle("selected",cb.checked);updateCount();}
+    });
+  });
+  updateCount();
+}
+/* ====================================================================
+   TOPIC GETTERS
+   ==================================================================== */
+function getTopics(){
+  var disc=currentDisc;
+  var topics=[];
+  $("sysGrid").querySelectorAll(".sys-card-cb:checked").forEach(function(cb){
+    var sysId=cb.dataset.sysId;
+    var sys=SYSTEMS.find(function(s){return s.id===sysId;});
+    if(!sys)return;
+    if((disc==="anatomy"||disc==="both")&&sys.anatomy){
+      sys.anatomy.forEach(function(sub){
+        var scb=document.getElementById("sub-"+sub.id);
+        if(scb&&scb.checked) topics.push(sub.full);
+      });
+    }
+    if((disc==="physiology"||disc==="both")&&sys.physiology){
+      sys.physiology.forEach(function(sub){
+        var scb=document.getElementById("sub-"+sub.id);
+        if(scb&&scb.checked) topics.push(sub.full);
+      });
+    }
+  });
+  return topics;
+}
+function updateCount(){
+  var topics=getTopics();
+  $("topicCountDisplay").textContent=topics.length+" subtopic"+(topics.length!==1?"s":"")+" selected";
+}
+/* ====================================================================
+   DISCIPLINE TOGGLE
+   ==================================================================== */
+$("discToggle").querySelectorAll(".disc-btn").forEach(function(btn){
+  btn.addEventListener("click",function(){
+    $("discToggle").querySelectorAll(".disc-btn").forEach(function(b){b.classList.remove("active");});
+    this.classList.add("active");
+    currentDisc=this.dataset.disc;
+    var noteMap={
+      "anatomy":"Showing Anatomy subtopics only",
+      "physiology":"Showing Physiology subtopics only",
+      "both":"Showing Anatomy plus Physiology subtopics"
+    };
+    $("discNote").textContent=noteMap[currentDisc]||"";
+    renderSystems();
+    calcDifficulty();
+  });
+});
+$("selectAllSys").addEventListener("click",function(){
+  $("sysGrid").querySelectorAll(".sys-card-cb").forEach(function(cb){cb.checked=true;cb.closest(".sys-card").classList.add("selected");});
+  $("sysGrid").querySelectorAll(".sub-item-cb").forEach(function(cb){cb.checked=true;});
+  updateCount();
+});
+$("clearAllSys").addEventListener("click",function(){
+  $("sysGrid").querySelectorAll(".sys-card-cb").forEach(function(cb){cb.checked=false;cb.closest(".sys-card").classList.remove("selected");});
+  updateCount();
+});
+$("learningOutcomes").addEventListener("input",updateCount);
+/* ====================================================================
+   BRAIN DUMP FORMAT TOGGLE (Choose ONE feature)
+   ==================================================================== */
+$("bdFormatAll").addEventListener("click",function(){
+  _bdFormat="all";
+  this.classList.add("active");
+  $("bdFormatOne").classList.remove("active");
+  $("bdFormatOneInfo").style.display="none";
+});
+$("bdFormatOne").addEventListener("click",function(){
+  _bdFormat="one";
+  this.classList.add("active");
+  $("bdFormatAll").classList.remove("active");
+  $("bdFormatOneInfo").style.display="";
+});
+/* ====================================================================
+   BRAIN DUMP CHART COUNT
+   ==================================================================== */
+function syncBdChartCount(){
+  var bd=parseInt($("bdCount").value)||0;
+  var cb=$("brainDumpChart");
+  var wrap=$("bdChartCountWrap");
+  var sel=$("bdChartCount");
+  if(!cb||!wrap||!sel)return;
+  wrap.style.display=(cb.checked&&bd>0)?"block":"none";
+  var prev=sel.value;
+  sel.innerHTML="";
+  var allOpt=document.createElement("option");
+  allOpt.value="all";
+  allOpt.textContent="All "+bd+" question"+(bd!==1?"s":"");
+  sel.appendChild(allOpt);
+  for(var i=bd-1;i>=1;i--){
+    var o=document.createElement("option");
+    o.value=String(i);
+    o.textContent=i+" of "+bd+" question"+(i!==1?"s":"");
+    sel.appendChild(o);
+  }
+  var noneOpt=document.createElement("option");
+  noneOpt.value="0";
+  noneOpt.textContent="None, written lines only";
+  sel.appendChild(noneOpt);
+  if(sel.querySelector('option[value="'+prev+'"]')) sel.value=prev;
+}
+$("brainDumpChart").addEventListener("change",syncBdChartCount);
+$("bdCount").addEventListener("change",function(){syncBdChartCount();calcDifficulty();calcPoints();});
+syncBdChartCount();
+/* ====================================================================
+   MC MODE
+   ==================================================================== */
+$("mcModeConf").addEventListener("click",function(){
+  _mcMode="confidence";
+  this.classList.add("active"); $("mcModeStd").classList.remove("active");
+  $("mcInfoConf").style.display=""; $("mcInfoStd").style.display="none";
+});
+$("mcModeStd").addEventListener("click",function(){
+  _mcMode="standard";
+  this.classList.add("active"); $("mcModeConf").classList.remove("active");
+  $("mcInfoConf").style.display="none"; $("mcInfoStd").style.display="";
+});
+/* ====================================================================
+   SPECIFIC QUESTIONS
+   ==================================================================== */
+$("sqToggle").addEventListener("click",function(){
+  var open=$("sqBody").style.display!=="none";
+  $("sqBody").style.display=open?"none":"block";
+  $("sqChevron").classList.toggle("open",!open);
+  this.setAttribute("aria-expanded",String(!open));
+});
+$("sqInput").addEventListener("input",function(){
+  var q=this.value.trim().split(/\n+/).filter(function(l){return /^(MC|TF|FR|MATCH)\s*:/i.test(l.trim());}).length;
+  $("sqCountDisplay").textContent=q;
+  $("sqCount").textContent=q+" pasted"; $("sqCount").style.display=q>0?"":"none";
+});
+/* ====================================================================
+   POINTS CALCULATOR
+   ==================================================================== */
+function calcPoints(){
+  var tf=parseInt($("tfCount").value)||0, mc=parseInt($("mcCount").value)||0;
+  var ms=parseInt($("matchSets").value)||0, fib=parseInt($("fibCount").value)||0, bd=parseInt($("bdCount").value)||0;
+  var ptsTF=parseFloat($("ptsTF").value)||0, ptsMC=parseFloat($("ptsMC").value)||0;
+  var ptsM=parseFloat($("ptsMatch").value)||0, ptsFIB=parseFloat($("ptsFIB").value)||0, ptsFR=parseFloat($("ptsFR").value)||0;
+  var matchItems=ms*8;
+  // For Choose ONE, FR points = single prompt total
+  var frEffective = (_bdFormat==="one" && bd>0) ? ptsFR : (bd*ptsFR);
+  var total=(tf*ptsTF)+(mc*ptsMC)+(matchItems*ptsM)+(fib*ptsFIB)+frEffective;
+  var el=$("ptsTotalNum"), bp=$("ptsBreakdown");
+  if(total===0){el.innerHTML='&ndash;<span class="unit">set section counts above</span>';bp.innerHTML='';return;}
+  el.innerHTML=total+'<span class="unit">pts</span>';
+  var parts=[];
+  if(tf>0)  parts.push('<span class="pts-pill">T/F <strong>'+(tf*ptsTF)+' pts</strong></span>');
+  if(mc>0)  parts.push('<span class="pts-pill">MC <strong>'+(mc*ptsMC)+' pts</strong></span>');
+  if(ms>0)  parts.push('<span class="pts-pill">Match <strong>'+(matchItems*ptsM)+' pts</strong></span>');
+  if(fib>0) parts.push('<span class="pts-pill">FIB <strong>'+(fib*ptsFIB)+' pts</strong></span>');
+  if(bd>0){
+    var frLabel = (_bdFormat==="one") ? "FR (1 of "+bd+")" : "FR";
+    parts.push('<span class="pts-pill">'+frLabel+' <strong>'+frEffective+' pts</strong></span>');
+  }
+  bp.innerHTML=parts.join("");
+}
+["tfCount","mcCount","matchSets","fibCount","bdCount","ptsTF","ptsMC","ptsMatch","ptsFIB","ptsFR"].forEach(function(id){
+  var el=$(id); if(el) el.addEventListener("change",calcPoints);
+});
+$("bdFormatAll").addEventListener("click",calcPoints);
+$("bdFormatOne").addEventListener("click",calcPoints);
+calcPoints();
+/* ====================================================================
+   DIFFICULTY ENGINE
+   ==================================================================== */
+var TYPE_W={tf:0.75,mc:1.0,match:0.9,fr:1.45};
+var DOK_M={
+  "DOK 1":0.55,"DOK 2":1.0,"DOK 3":1.55,"DOK 4":2.1,
+  "Balanced (50% DOK 2, 50% DOK 3)":1.28,"Random":1.05
+};
+var DIF_BANDS=[
+  {max:30,label:"Recall-Heavy",color:"var(--ink-muted)"},
+  {max:50,label:"Foundational",color:"var(--gold)"},
+  {max:70,label:"Moderate",color:"var(--terra-mid)"},
+  {max:85,label:"Challenging",color:"var(--terra)"},
+  {max:100,label:"Advanced",color:"var(--navy)"},
+];
+var MIN_AVG=0.35, MAX_AVG=2.0;
+function getDifBand(score){return DIF_BANDS.find(function(b){return score<=b.max;})||DIF_BANDS[DIF_BANDS.length-1];}
+function calcDifficulty(){
+  var tf=parseInt($("tfCount").value)||0, mc=parseInt($("mcCount").value)||0;
+  var ms=parseInt($("matchSets").value)||0, fib=parseInt($("fibCount").value)||0, bd=parseInt($("bdCount").value)||0;
+  var matchItems=ms*8;
+  var totalQ=tf+mc+matchItems+fib+bd;
+  if(totalQ===0){
+    $("difCalcNum").textContent="–"; $("difCalcStatus").textContent="Set question counts to calculate";
+    $("difFill").style.width="0%"; $("difBreakdown").innerHTML="";
+    $("difMatchCard").style.display="none";
+    $("statusDifChip").style.display="none";
+    $("difSuggest").style.display="none";
+    _difCurrent=null;
+    updateGuideHighlight(-1);
+    return;
+  }
+  var dokTF=DOK_M[$("tfDOK").value]||1.0;
+  var dokMC=DOK_M[$("mcDOK").value]||1.0;
+  var dokMatch=DOK_M[$("matchDOK").value]||1.0;
+  var dokFIB=DOK_M[$("fibDOK").value]||1.0;
+  var dokBD=DOK_M[$("bdDOK").value]||1.0;
+  var rawTotal=(tf*TYPE_W.tf*dokTF)+(mc*TYPE_W.mc*dokMC)+(matchItems*TYPE_W.match*dokMatch)+(fib*0.85*dokFIB)+(bd*TYPE_W.fr*dokBD);
+  var avg=rawTotal/totalQ;
+  var index=Math.round(Math.max(0,Math.min(100,(avg-MIN_AVG)/(MAX_AVG-MIN_AVG)*100)));
+  _difCurrent=index;
+  var band=getDifBand(index);
+  $("difCalcNum").textContent=index;
+  $("difCalcNum").className="dif-compare-num live";
+  $("difCalcStatus").textContent=band.label+" ("+index+"/100)";
+  $("difFill").style.width=index+"%";
+  $("difFill").style.background=band.color;
+  document.querySelector('.dif-track').setAttribute('aria-valuenow', index);
+  var parts=[];
+  var dokLabel=function(sel){var v=$(sel).value;if(v==="Balanced (50% DOK 2, 50% DOK 3)")return"DOK 2-3 Balanced";if(v==="Random")return"DOK 1-3 Random";return v;};
+  if(tf>0)  parts.push('<span class="dif-seg">T/F '+tf+'q, '+dokLabel("tfDOK")+'</span>');
+  if(mc>0)  parts.push('<span class="dif-seg">MC '+mc+'q, '+dokLabel("mcDOK")+'</span>');
+  if(ms>0)  parts.push('<span class="dif-seg">Match '+matchItems+'items, '+dokLabel("matchDOK")+'</span>');
+  if(fib>0) parts.push('<span class="dif-seg">FIB '+fib+'q, '+dokLabel("fibDOK")+'</span>');
+  if(bd>0)  parts.push('<span class="dif-seg">FR '+bd+'q, '+dokLabel("bdDOK")+'</span>');
+  $("difBreakdown").innerHTML=parts.join("");
+  var chip=$("statusDifChip");
+  chip.style.display="inline-flex";
+  chip.style.color="var(--navy)"; chip.style.borderColor=band.color; chip.style.background="var(--bg)";
+  chip.textContent="DT "+index+", "+band.label;
+  if(currentDifTarget!==null){
+    $("difMatchCard").style.display="";
+    var tgt=currentDifTarget;
+    var diff=index-tgt;
+    var absDiff=Math.abs(diff);
+    $("difMatchNum").textContent=index;
+    if(absDiff<=3){
+      $("difMatchNum").className="dif-compare-num match";
+      $("difMatchText").textContent="Matches target (±3 pts)";
+      $("difMatchText").className="dif-compare-status ok";
+      $("difSuggest").style.display="none";
+    } else {
+      $("difMatchNum").className="dif-compare-num miss";
+      var dir=diff<0?"too easy by "+absDiff+" pts":"too hard by "+absDiff+" pts";
+      $("difMatchText").textContent=dir;
+      $("difMatchText").className="dif-compare-status miss";
+      showSuggestions(index,tgt,{tf:tf,mc:mc,ms:ms,bd:bd});
+    }
+  } else {
+    $("difMatchCard").style.display="none";
+    $("difSuggest").style.display="none";
+  }
+  updateGuideHighlight(index);
+}
+function showSuggestions(current,target,counts){
+  var needsMore=current<target;
+  var sections=[
+    {id:"mcDOK",label:"MC",count:counts.mc,cur:$("mcDOK").value},
+    {id:"bdDOK",label:"Free Response",count:counts.bd,cur:$("bdDOK").value},
+    {id:"tfDOK",label:"T/F",count:counts.tf,cur:$("tfDOK").value},
+    {id:"matchDOK",label:"Matching",count:counts.ms*8,cur:$("matchDOK").value},
+  ].filter(function(s){return s.count>0;});
+  var dokOrder=["DOK 1","Balanced (50% DOK 2, 50% DOK 3)","DOK 2","DOK 3","DOK 4"];
+  var tips=[];
+  sections.forEach(function(s){
+    var idx=dokOrder.indexOf(s.cur);
+    if(needsMore&&idx<dokOrder.length-1){
+      tips.push("Raise <strong>"+s.label+" DOK</strong> from "+s.cur.replace("Balanced (50% DOK 2, 50% DOK 3)","Balanced")+" to "+dokOrder[idx+1]);
+    } else if(!needsMore&&idx>0){
+      tips.push("Lower <strong>"+s.label+" DOK</strong> from "+s.cur.replace("Balanced (50% DOK 2, 50% DOK 3)","Balanced")+" to "+dokOrder[idx-1]);
+    }
+  });
+  if(tips.length===0){
+    tips.push(needsMore?"Add more Free Response or MC questions to increase the DI.":"Reduce Free Response count or shift to T/F-heavy format to lower the DI.");
+  }
+  $("difSuggest").style.display="";
+  $("difSuggestText").innerHTML=
+    "<strong>Current DI: "+current+"</strong> &rarr; <strong>Target: "+target+"</strong><br><br>"+
+    "Try these changes:<br>"+tips.slice(0,3).map(function(t){return "&bull; "+t;}).join("<br>");
+}
+function updateGuideHighlight(index){
+  document.querySelectorAll(".dif-guide-row").forEach(function(row){
+    var min=parseInt(row.dataset.min), max=parseInt(row.dataset.max);
+    row.classList.toggle("highlight", index>=min&&index<=max);
+  });
+}
+["tfCount","tfDOK","mcCount","mcDOK","matchSets","matchDOK","fibCount","fibDOK","bdCount","bdDOK"].forEach(function(id){
+  var el=$(id); if(el) el.addEventListener("change",function(){calcDifficulty();calcPoints();});
+});
+$("difTargetInput").addEventListener("input",function(){
+  var v=parseInt(this.value);
+  if(v>=1&&v<=100){
+    currentDifTarget=v;
+    $("difTargetDisplay").textContent=v;
+    var band=getDifBand(v);
+    $("difTargetBand").textContent=band.label;
+    $("difTargetBand").style.color="var(--gold-bright)";
+    document.querySelectorAll(".dif-pill").forEach(function(p){p.classList.remove("active");});
+  } else if(!this.value){
+    currentDifTarget=null;
+    $("difTargetDisplay").textContent="–";
+    $("difTargetBand").textContent="–";
+    $("difTargetBand").style.color="var(--gold-bright)";
+  }
+  calcDifficulty();
+});
+document.querySelectorAll(".dif-pill").forEach(function(btn){
+  btn.addEventListener("click",function(){
+    document.querySelectorAll(".dif-pill").forEach(function(b){b.classList.remove("active");});
+    this.classList.add("active");
+    var tgt=parseInt(this.dataset.target);
+    currentDifTarget=tgt;
+    $("difTargetInput").value=tgt;
+    $("difTargetDisplay").textContent=tgt;
+    var band=getDifBand(tgt);
+    $("difTargetBand").textContent=band.label;
+    $("difTargetBand").style.color="var(--gold-bright)";
+    calcDifficulty();
+  });
+});
+document.querySelectorAll(".ver-btn").forEach(function(btn){
+  btn.addEventListener("click",function(){
+    document.querySelectorAll(".ver-btn").forEach(function(b){b.classList.remove("active");});
+    this.classList.add("active");
+    currentVersion=parseInt(this.dataset.ver);
+  });
+});
+/* ====================================================================
+   DOK RUBRIC
+   ==================================================================== */
+var DOK_RUBRIC=
+"DOK LEVEL DEFINITIONS (operational, not just labels):\n"+
+"  DOK 1, Recall and Reproduction: Recall a fact, term, formula, or definition from memory. The answer is unambiguous. The student does NOT need to interpret, compare, or apply, they only need to retrieve. Example stems: 'Which structure...', 'Name the...', 'What is the normal value of...'\n"+
+"  DOK 2, Skills and Concepts: Use conceptual knowledge to interpret, classify, compare, or apply a procedure to a familiar type of problem. The student must SELECT and USE the right concept, not just retrieve it. Example stems: 'Why does...', 'How does X accomplish Y', 'Which mechanism explains...'\n"+
+"  DOK 3, Strategic Thinking: Reason from evidence, evaluate competing explanations, or justify a clinical decision in a novel or multi-step scenario. Distractors must be plausible to a student with partial understanding. Example stems: 'A patient presents with... which structure is most likely affected and why', 'Which intervention is most appropriate and what is the anatomical basis'\n"+
+"  DOK 4, Extended Thinking: Synthesize across multiple content domains. The correct answer requires integration that a student who mastered each domain separately but missed the cross-domain connection would likely miss. Use sparingly in multiple-choice; most appropriate in free response.\n\n"+
+"DOK QUALITY GATE, verify every question before finalizing:\n"+
+"  DOK 1 check: Can a student answer this from memory alone with no processing? If yes equals DOK 1. If the student must interpret or decide, NOT DOK 1.\n"+
+"  DOK 2 check: Does the stem require the student to do something with the information? Is there at least one plausible distractor reflecting a common misconception? Both must be yes.\n"+
+"  DOK 3 check: Is the scenario novel (not a textbook example)? Must the student weigh competing explanations? Are ALL distractors plausible to a partially-prepared student? All three must be yes.\n"+
+"  DOK 4 check: Does the correct answer REQUIRE integration across at least two content domains? Would a student who mastered each domain individually but missed the connection plausibly select a distractor?\n"+
+"If a question fails its DOK check, revise it. Do not relabel. A recall question is DOK 1 regardless of framing.";
+function dokInstruction(dokValue,count){
+  var n=count||0;
+  if(dokValue==="DOK 1") return "DOK TARGET: Write all "+n+" questions at DOK 1 (recall and recognition only). No interpretation required.";
+  if(dokValue==="DOK 2") return "DOK TARGET: Write all "+n+" questions at DOK 2. Each question requires the student to apply or explain a concept, not just recall it.";
+  if(dokValue==="DOK 3") return "DOK TARGET: Write all "+n+" questions at DOK 3. Each requires analysis, evaluation, or clinical reasoning in a novel scenario.";
+  if(dokValue==="DOK 4") return "DOK TARGET: Write all "+n+" questions at DOK 4. Requires multi-system synthesis; use judiciously.";
+  if(dokValue==="Random") return "DOK TARGET: Distribute questions randomly across DOK 1, 2, and 3. Label each question's DOK level.";
+  var half=Math.floor(n/2), other=n-half;
+  return "DOK TARGET, BALANCED SPLIT: Write exactly "+half+" questions at DOK 2 and exactly "+other+" questions at DOK 3. Label each question's DOK so the distribution can be verified.";
+}
+/* ====================================================================
+   ARRAY HELPERS (shuffle + key smoothing for MC)
+   ==================================================================== */
+function shuffleArr(arr){
+  for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t;}
+  return arr;
+}
+/* ====================================================================
+   PRINT FORMATTING INSTRUCTIONS (guidance carried into the doc build)
+   ==================================================================== */
+var PRINT_INSTRUCTIONS=
+"PRINT LAYOUT INTENT (the builder tool renders and paginates; keep content print-friendly):\n"+
+"- Keep each stem with its options/blanks (no orphaned questions).\n"+
+"- Keep MC options as an array of exactly 4 unless a section is designed otherwise.\n"+
+"- Use plain scientific text. Bold a single key term in T/F items using **double asterisks**.\n"+
+"- WCAG intent: no meaning conveyed by color alone; the builder outputs black text on white.";
+/* ====================================================================
+   JSON OUTPUT CONTRACT (what the AI must return so the tool can build)
+   ==================================================================== */
+function jsonContract(meta){
+  return (
+"=====================================================================\n"+
+"OUTPUT CONTRACT, READ CAREFULLY\n"+
+"=====================================================================\n"+
+"Return your ENTIRE response as ONE fenced code block using ```json ... ```.\n"+
+"Do NOT write any prose, preamble, or explanation outside the code block.\n"+
+"The block must be a single valid JSON object matching this schema exactly:\n\n"+
+"{\n"+
+'  "meta": { "title": string, "course": string, "term": string, "instructor": string },\n'+
+'  "sections": [\n'+
+"    // include ONLY the sections requested, in this order: tf, mc, match, fib, fr\n"+
+'    { "type":"tf", "points": number, "items":[ { "statement":"sentence with ONE **bolded** key term", "answer":"T"|"F", "correction":"for F items, the correct term; empty for T", "dok":1 } ] },\n'+
+'    { "type":"mc", "points": number, "items":[ { "stem":"question text", "options":["opt A text","opt B text","opt C text","opt D text"], "correctIndex":0, "rationale":"why correct + why distractors wrong", "dok":2 } ] },\n'+
+'    { "type":"match", "points": number, "sets":[ { "topic":"set topic", "columnA":["term 1","term 2"], "columnB":["def for term 1","def for term 2","distractor def"], "answers":[0,1] } ] },\n'+
+'    { "type":"fib", "points": number, "items":[ { "sentence":"sentence with the blank written as ___ (three underscores)", "answer":"the missing term", "dok":2 } ] },\n'+
+'    { "type":"fr", "points": number, "chooseOne": '+(meta.isChooseOne?"true":"false")+', "items":[ { "prompt":"free response prompt", "chart": { "columns":["Col 1","Col 2"], "rows": 6 } , "lines": 6, "exampleAnswer":"model answer", "rubric":"key points for full credit", "dok":3 } ] }\n'+
+"  ]\n"+
+"}\n\n"+
+"RULES FOR THE JSON:\n"+
+'- For mc items: "options" is the raw list and "correctIndex" is the 0-based index of the correct option. Do NOT try to balance answer letters; the builder shuffles options and assigns letters itself.\n'+
+'- For match sets: "answers" is an array where answers[i] is the 0-based index into columnB that matches columnA[i]. columnB may include 1 to 2 extra distractors.\n'+
+'- For fr items: include "chart" ONLY when a chart is requested for that item, otherwise set "chart" to null and use "lines" (5 or 6). '+(meta.hasChart?("First "+meta.chartCount+" fr item(s) get a chart; the rest use lines."):"No fr charts requested; set every chart to null.")+"\n"+
+'- Honor the EXACT item counts specified per section below. Do not add or drop items.\n'+
+"- Output valid JSON only: straight quotes, no trailing commas, no comments in your actual output (the // notes above are for your understanding only).");
+}
+/* ====================================================================
+   BUILD PROMPT
+   ==================================================================== */
+var lastPrompt="";
+function buildPrompt(){
+  var topics=getTopics();
+  if(!topics.length) return{ok:false,error:"Please check at least one body system and select subtopics to cover."};
+  var tf=parseInt($("tfCount").value)||0, mc=parseInt($("mcCount").value)||0;
+  var ms=parseInt($("matchSets").value)||0, fib=parseInt($("fibCount").value)||0, bd=parseInt($("bdCount").value)||0;
+  if(tf+mc+ms+fib+bd===0) return{ok:false,error:"Select at least one section with a count greater than zero."};
+  var disc=currentDisc;
+  var fmt=$("formatStyle").value;
+  var lo=($("learningOutcomes").value||"").trim();
+  var uploadedText=(window._uploadedText||"").trim();
+  var sqRaw=($("sqInput").value||"").trim();
+  var matchTopics=[$("matchTopic1").value.trim(),$("matchTopic2").value.trim(),$("matchTopic3").value.trim()].filter(Boolean);
+  var hasBDChart=$("brainDumpChart").checked;
+  var isChooseOne=(_bdFormat==="one"&&bd>0);
+  var examTitle=$("examTitle").value.trim()||"Exam";
+  var courseName=$("courseName").value.trim(), termName=$("termName").value.trim(), instructorName=$("instructorName").value.trim();
+  var ptsTF=parseFloat($("ptsTF").value)||1, ptsMC=parseFloat($("ptsMC").value)||1;
+  var ptsMatch=parseFloat($("ptsMatch").value)||1, ptsFIB=parseFloat($("ptsFIB").value)||1, ptsFR=parseFloat($("ptsFR").value)||10;
+  var version=currentVersion;
+  var diTarget=currentDifTarget;
+  var diCalc=_difCurrent;
+  var bdChartCountEl=$("bdChartCount");
+  var bdChartCountVal=bdChartCountEl?bdChartCountEl.value:"all";
+  var chartCount=(!hasBDChart)?0:(bdChartCountVal==="all"?bd:parseInt(bdChartCountVal)||0);
+  var discText=disc==="both"?"Anatomy and Physiology (enforce roughly 50/50 split between anatomy and physiology questions)":disc==="anatomy"?"Anatomy only":"Physiology only";
+  var diBlock="";
+  if(diTarget!==null){
+    var diCal=diCalc!==null?" (calculated from DOK settings: "+diCalc+")":"";
+    var diComposition=diTarget<31?"DOK weight: heavily DOK 1. Primarily recall and identification.":diTarget<51?"DOK weight: DOK 1 to 2 dominant. Recall with basic application.":diTarget<71?"DOK weight: balanced DOK 2 to 3. Roughly half application, half strategic reasoning or novel scenario.":diTarget<86?"DOK weight: DOK 3 dominant. Most questions require multi-step reasoning, clinical application, or analysis.":"DOK weight: DOK 3 to 4. Synthesis across systems. Reserve for comprehensive or pre-professional exams.";
+    diBlock="\nDIFFICULTY TARGET: "+diTarget+"/100"+diCal+"\n"+diComposition+"\nThis target controls DOK composition only. It ensures version-to-version consistency, not a specific class average.\nThis is Version "+version+" of this exam. Generate completely fresh questions, no repeated stems, scenarios, or answer structures from any previous version.";
+  } else if(version>1){
+    diBlock="\nEXAM VERSION: "+version+". Generate completely fresh questions. No repeated stems, scenarios, or answer patterns from previous versions.";
+  }
+  var topicsBlock=topics.map(function(t,i){return (i+1)+". "+t;}).join("\n");
+  function shortName(t){return t.replace(/\s*\(.*$/,"").replace(/\s*:.*$/,"").replace(/\s*,\s*[A-Z].*$/,"").trim();}
+  function equalDistBlock(total,label){
+    var n=topics.length; if(n===0)return "Draw from all available topics.";
+    var base=Math.floor(total/n), rem=total%n;
+    var lines=topics.map(function(t,i){var count=base+(i<rem?1:0);return "  "+shortName(t)+": EXACTLY "+count+" question"+(count!==1?"s":"");});
+    return "DISTRIBUTION FOR THIS SECTION ("+label+"):\n"+lines.join("\n")+"\nEvery row must be filled. Do not skip topics or cluster around easier ones.";
+  }
+  var secs=[];
+  if(tf>0) secs.push(
+"SECTION, TRUE / FALSE ("+tf+" items, "+ptsTF+" pt each)\n"+
+dokInstruction($("tfDOK").value,tf)+"\n"+
+equalDistBlock(tf,"T/F")+"\n"+
+"- Bold AND underline the single most important factual term in each statement using **double asterisks** around that term.\n"+
+"- For FALSE items, that bolded term is the ONLY wrong word; put the correct replacement in the correction field.\n"+
+"- Approximately 50% true, 50% false. Provide EXACTLY "+tf+" items in the tf section.");
+  if(mc>0) secs.push(
+"SECTION, MULTIPLE CHOICE ("+mc+" items, "+ptsMC+" pt each)\n"+
+dokInstruction($("mcDOK").value,mc)+"\n"+
+equalDistBlock(mc,"MC")+"\n"+
+"- Exactly 4 options per item. Set correctIndex to the correct option. Distractors must reflect plausible misconceptions.\n"+
+"- Do NOT worry about answer-letter balance; the builder shuffles options and assigns letters. Provide EXACTLY "+mc+" items in the mc section.");
+  if(ms>0){
+    var matchTopicBlock=matchTopics.length?matchTopics.slice(0,ms).map(function(t,i){return "  Set "+(i+1)+" topic: "+t;}).join("\n"):"  Draw matching topics from the selected body systems.";
+    secs.push(
+"SECTION, MATCHING ("+ms+" set(s), "+ptsMatch+" pt each match)\n"+
+dokInstruction($("matchDOK").value,ms*8)+"\n"+
+matchTopicBlock+"\n"+
+"- Each set: about 8 columnA terms, columnB holds the correct definitions plus 1 to 2 distractors. All matches uniquely resolvable. Provide EXACTLY "+ms+" set(s).");
+  }
+  if(fib>0) secs.push(
+"SECTION, FILL IN THE BLANK ("+fib+" items, "+ptsFIB+" pt each)\n"+
+dokInstruction($("fibDOK").value,fib)+"\n"+
+equalDistBlock(fib,"FIB")+"\n"+
+"- Each sentence blanks ONE high-yield term (structure, value, landmark, or mechanism), written as ___ (three underscores). Never blank common words. One correct answer per blank. Provide EXACTLY "+fib+" items.");
+  if(bd>0){
+    var chartNote;
+    if(chartCount===0) chartNote="No charts: set chart to null on every fr item and use lines (5 or 6).";
+    else if(chartCount===bd) chartNote="Every fr item includes a chart. Choose columns fitting the topic (e.g. Muscle|Origin|Insertion|Action; Structure|Location|Function; Nerve|Origin|Target|Function; Hormone|Source|Target|Effect). Set rows to a sensible number (5 to 8).";
+    else chartNote="The first "+chartCount+" fr item(s) include a chart (choose fitting columns); the remaining "+(bd-chartCount)+" use lines (5 or 6), chart null.";
+    secs.push(
+"SECTION, FREE RESPONSE / BRAIN DUMP ("+bd+" prompt(s), "+ptsFR+" pts each"+(isChooseOne?", CHOOSE ONE":"")+")\n"+
+dokInstruction($("bdDOK").value,bd)+"\n"+
+equalDistBlock(bd,"FR")+"\n"+
+"- "+chartNote+"\n"+
+(isChooseOne?"- chooseOne is true: all prompts print but the student answers ONE; the builder handles directions and points. Still provide answer content for every prompt.\n":"")+
+"- Provide a model exampleAnswer and a brief rubric per prompt. Provide EXACTLY "+bd+" fr items.");
+  }
+  var meta={isChooseOne:isChooseOne,hasChart:chartCount>0,chartCount:chartCount};
+  var prompt=
+"You are an expert Anatomy and Physiology educator writing exam content for a print exam builder.\n"+
+"DISCIPLINE: "+discText+".\n"+
+"FORMAT: "+(fmt==="clean"?"Clean, minimal, print-ready.":"Exam booklet with generous spacing.")+"\n"+
+(diBlock?diBlock+"\n":"")+
+"\n"+DOK_RUBRIC+"\n\n"+
+"=====================================================================\n"+
+"EXAM META\n"+
+"=====================================================================\n"+
+'Use these exact values in the JSON "meta": title="'+examTitle+'", course="'+courseName+'", term="'+termName+'", instructor="'+instructorName+'".\n\n'+
+"=====================================================================\n"+
+"TOPICS TO COVER\n"+
+"=====================================================================\n"+
+topicsBlock+"\n"+
+(uploadedText?"\nSOURCE MATERIAL FROM UPLOADED FILES, use as the primary source for question content:\n"+uploadedText.substring(0,8000)+(uploadedText.length>8000?"\n[additional content truncated, use all uploaded material proportionally]":"")+"\n":"")+
+(lo?"\nLEARNING OUTCOMES, every question should map to at least one of these:\n"+lo+"\n":"")+
+(sqRaw?"\nSPECIFIC QUESTIONS TO INCLUDE (incorporate their content into the matching sections):\n"+sqRaw+"\n":"")+"\n"+
+"=====================================================================\n"+
+"CONTENT QUALITY\n"+
+"=====================================================================\n"+
+"- "+discText+".\n"+
+"- Each topic gets an equal share of items in every section (see per-section distributions).\n"+
+"- A concept tested in one section may not reappear in another at the same DOK level.\n"+
+"- Zero ambiguity. Zero factual errors.\n\n"+
+"=====================================================================\n"+
+"EXAM SECTIONS\n"+
+"=====================================================================\n\n"+secs.join("\n\n")+"\n\n"+
+PRINT_INSTRUCTIONS+"\n\n"+
+jsonContract(meta);
+  return{ok:true,prompt:prompt};
+}
+/* ====================================================================
+   UTILITY
+   ==================================================================== */
+function showToast(msg,dur){var t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},dur||2600);}
+function copy(text){
+  try{var ta=document.createElement("textarea");ta.value=text;ta.style.cssText="position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;";document.body.appendChild(ta);ta.focus();ta.select();var ok=document.execCommand("copy");document.body.removeChild(ta);if(ok)return true;}catch(e){}
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text);return true;}}catch(e){}
+  return false;
+}
+function openURL(url){try{(window.top||window).open(url,"_blank");}catch(e){window.open(url,"_blank");}}
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function boldTerms(s){return esc(s).replace(/\*\*(.+?)\*\*/g,"<b><u>$1</u></b>");}
+/* ====================================================================
+   MODAL
+   ==================================================================== */
+function openModal(){$("promptModal").classList.add("open");$("promptModal").setAttribute("aria-hidden","false");}
+function closeModal(){$("promptModal").classList.remove("open");$("promptModal").setAttribute("aria-hidden","true");}
+window.addEventListener("click",function(e){if(e.target===$("promptModal"))closeModal();});
+window.addEventListener("keydown",function(e){if(e.key==="Escape")closeModal();});
+$("closePrompt").addEventListener("click",closeModal);
+function handleGen(dest){
+  var r=buildPrompt();
+  if(!r.ok){showToast("⚠ "+r.error,3500);return;}
+  lastPrompt=r.prompt;
+  var copied=copy(r.prompt);
+  $("promptOutput").textContent=r.prompt;
+  var url=dest==="gpt"?"https://chat.openai.com/":"https://claude.ai/new";
+  openURL(url);
+  showToast(copied?"✓ Prompt copied, paste into the AI window.":"⚠ Auto-copy failed, use Preview then Copy.",copied?3200:4000);
+}
+$("genChatGPT").addEventListener("click",function(){handleGen("gpt");});
+$("genClaude").addEventListener("click",function(){handleGen("claude");});
+$("previewPrompt").addEventListener("click",function(){
+  var r=buildPrompt();
+  if(!r.ok){showToast("⚠ "+r.error,3500);return;}
+  lastPrompt=r.prompt; $("promptOutput").textContent=r.prompt; openModal();
+});
+$("copyPromptBtn").addEventListener("click",function(){
+  var ok=copy($("promptOutput").textContent||"");
+  showToast(ok?"✓ Copied.":"Select all text then use Ctrl+C / Cmd+C.");
+});
+$("selectAllBtn").addEventListener("click",function(){
+  var pre=$("promptOutput");
+  var range=document.createRange(); range.selectNodeContents(pre);
+  var sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  showToast("Text selected, press Ctrl+C or Cmd+C to copy.",3000);
+});
+$("openGptBtn").addEventListener("click",function(){openURL("https://chat.openai.com/");});
+$("openClaudeBtn").addEventListener("click",function(){openURL("https://claude.ai/new");});
+/* ====================================================================
+   FILE UPLOAD
+   ==================================================================== */
+window._uploadedText = "";
+var _uploadedFiles = [];
+function renderFileList(){
+  var list = $("uploadFileList");
+  if(!list) return;
+  list.innerHTML = "";
+  _uploadedFiles.forEach(function(f, i){
+    var item = document.createElement("div");
+    item.className = "upload-file-item";
+    var statusCls = f.status==="ok"?"ok":f.status==="reading"?"reading":"err";
+    var statusLabel = f.status==="ok"?"Extracted":f.status==="reading"?"Reading":"Error";
+    item.innerHTML =
+      '<span style="font-size:16px;" aria-hidden="true">' + (f.name.endsWith(".pdf")?"\u{1F4C4}":"\u{1F4DD}") + '</span>' +
+      '<span class="upload-file-name">' + esc(f.name) + '</span>' +
+      '<span class="upload-file-size">' + (f.size/1024).toFixed(1) + ' KB</span>' +
+      '<span class="upload-file-status ' + statusCls + '">' + statusLabel + '</span>' +
+      '<button class="upload-remove" data-idx="' + i + '" type="button" title="Remove" aria-label="Remove file">×</button>';
+    list.appendChild(item);
+  });
+  list.querySelectorAll(".upload-remove").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var idx = parseInt(this.dataset.idx);
+      _uploadedFiles.splice(idx, 1);
+      rebuildUploadedText();
+      renderFileList();
+    });
+  });
+}
+function rebuildUploadedText(){
+  window._uploadedText = _uploadedFiles.filter(function(f){return f.status==="ok";}).map(function(f){
+    return "=== FILE: " + f.name + " ===\n" + f.text;
+  }).join("\n\n");
+}
+function extractText(file){
+  var entry = {name: file.name, size: file.size, text: "", status: "reading"};
+  _uploadedFiles.push(entry);
+  renderFileList();
+  var ext = file.name.split(".").pop().toLowerCase();
+  if(ext === "pdf"){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var typedarray = new Uint8Array(e.target.result);
+      var pdfjsLib = window.pdfjsLib || window["pdfjs-dist/build/pdf"];
+      if(!pdfjsLib){
+        entry.status="err"; entry.text="PDF.js not loaded"; rebuildUploadedText(); renderFileList(); return;
+      }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      pdfjsLib.getDocument(typedarray).promise.then(function(pdf){
+        var promises = [];
+        for(var p=1; p<=pdf.numPages; p++){
+          promises.push(pdf.getPage(p).then(function(page){
+            return page.getTextContent().then(function(tc){
+              return tc.items.map(function(i){return i.str;}).join(" ");
+            });
+          }));
+        }
+        Promise.all(promises).then(function(texts){
+          entry.text = texts.join("\n");
+          entry.status = "ok";
+          rebuildUploadedText(); renderFileList();
+        });
+      }).catch(function(err){
+        entry.status="err"; entry.text="Failed to read PDF: "+err.message;
+        rebuildUploadedText(); renderFileList();
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  } else if(ext === "docx" || ext === "doc"){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      if(typeof mammoth === "undefined"){
+        entry.status="err"; entry.text="mammoth.js not loaded"; rebuildUploadedText(); renderFileList(); return;
+      }
+      mammoth.extractRawText({arrayBuffer: e.target.result}).then(function(result){
+        entry.text = result.value;
+        entry.status = "ok";
+        rebuildUploadedText(); renderFileList();
+      }).catch(function(err){
+        entry.status="err"; entry.text="Failed: "+err.message;
+        rebuildUploadedText(); renderFileList();
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    entry.status="err"; entry.text="Unsupported format";
+    rebuildUploadedText(); renderFileList();
+  }
+}
+var zone = $("uploadZone");
+var fileInput = $("fileInput");
+if(zone && fileInput){
+  fileInput.addEventListener("change", function(){
+    Array.from(this.files).forEach(extractText);
+    this.value = "";
+  });
+  zone.addEventListener("dragover", function(e){ e.preventDefault(); this.classList.add("drag-over"); });
+  zone.addEventListener("dragleave", function(){ this.classList.remove("drag-over"); });
+  zone.addEventListener("drop", function(e){
+    e.preventDefault(); this.classList.remove("drag-over");
+    Array.from(e.dataTransfer.files).forEach(extractText);
+  });
+}
+/* ====================================================================
+   PASTE-BACK: PARSE, VERIFY, RENDER, EXPORT
+   ==================================================================== */
+var LETTERS=["A","B","C","D","E","F","G","H"];
+/* Robustly pull a JSON object out of an arbitrary AI reply */
+function extractJSON(raw){
+  if(!raw) return null;
+  var text=raw.trim();
+  // Prefer a fenced code block
+  var fence=text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  var candidate=fence?fence[1]:text;
+  // Fall back to the outermost { ... }
+  var first=candidate.indexOf("{"), last=candidate.lastIndexOf("}");
+  if(first===-1||last===-1||last<first) return null;
+  var slice=candidate.slice(first,last+1);
+  try{ return JSON.parse(slice); }catch(e){
+    // light repair: strip trailing commas
+    try{ return JSON.parse(slice.replace(/,\s*([}\]])/g,"$1")); }catch(e2){ return null; }
+  }
+}
+/* Deterministically shuffle MC options, rebuild letters, smooth the key */
+function processMC(items){
+  var out=items.map(function(it){
+    var opts=(it.options||[]).map(function(o,i){return {text:o,correct:(i===it.correctIndex)};});
+    shuffleArr(opts);
+    var ci=opts.findIndex(function(o){return o.correct;});
+    if(ci<0) ci=0;
+    return {stem:it.stem||"",options:opts.map(function(o){return o.text;}),correctIndex:ci,dok:it.dok,rationale:it.rationale||""};
+  });
+  // avoid 3+ identical correct letters in a row by re-placing the correct option
+  for(var i=2;i<out.length;i++){
+    if(out[i].correctIndex===out[i-1].correctIndex && out[i].correctIndex===out[i-2].correctIndex){
+      var q=out[i], n=q.options.length;
+      var target=(q.correctIndex+1)%n;
+      var correctText=q.options[q.correctIndex];
+      q.options[q.correctIndex]=q.options[target];
+      q.options[target]=correctText;
+      q.correctIndex=target;
+    }
+  }
+  return out;
+}
+function keyDistribution(mcProcessed){
+  var counts={};
+  mcProcessed.forEach(function(q){var L=LETTERS[q.correctIndex];counts[L]=(counts[L]||0)+1;});
+  return counts;
+}
+function maxRun(mcProcessed){
+  var run=1,best=1;
+  for(var i=1;i<mcProcessed.length;i++){
+    if(mcProcessed[i].correctIndex===mcProcessed[i-1].correctIndex){run++;best=Math.max(best,run);}
+    else run=1;
+  }
+  return mcProcessed.length?best:0;
+}
+/* Build student + key HTML from parsed data. Returns {student,key,verify} */
+function renderDocuments(data){
+  var meta=data.meta||{};
+  var title=meta.title||$("examTitle").value.trim()||"Exam";
+  var course=meta.course||$("courseName").value.trim();
+  var term=meta.term||$("termName").value.trim();
+  var instructor=meta.instructor||$("instructorName").value.trim();
+  var confidence=(_mcMode==="confidence");
+  var sections=Array.isArray(data.sections)?data.sections:[];
+  var studentParts=[], keyParts=[], verifyBits=[];
+  // header
+  var headBits=[];
+  if(course) headBits.push(esc(course));
+  if(term) headBits.push(esc(term));
+  if(instructor) headBits.push(esc(instructor));
+  var headerHtml='<h1>'+esc(title)+'</h1>'+(headBits.length?'<div class="exam-sub">'+headBits.join(" &nbsp;|&nbsp; ")+'</div>':'')+
+    '<div class="exam-fields">Name: ________________________  &nbsp;&nbsp; Date: ____________  &nbsp;&nbsp; Section: __________</div>';
+  var keyHeaderHtml='<h1>Answer Key, '+esc(title)+'</h1>'+(headBits.length?'<div class="exam-sub">'+headBits.join(" &nbsp;|&nbsp; ")+'</div>':'');
+  var secLetterNames={tf:"True / False",mc:"Multiple Choice",match:"Matching",fib:"Fill in the Blank",fr:"Free Response"};
+  sections.forEach(function(sec){
+    var type=sec.type;
+    var pts=(sec.points!=null)?sec.points:"";
+    if(type==="tf"){
+      var items=sec.items||[];
+      studentParts.push('<h2>'+secLetterNames.tf+' &nbsp;<span style="font-weight:400;font-size:12px;">('+esc(pts)+' pt each)</span></h2>'+
+        '<div class="directions">Indicate True (T) or False (F). You may correct the bold, underlined term ONLY to earn 0.5 pt bonus.</div>');
+      keyParts.push('<h2>'+secLetterNames.tf+'</h2>');
+      items.forEach(function(it,i){
+        studentParts.push('<div class="q"><span class="q-num">'+(i+1)+'.</span> <span class="blank">&nbsp;</span> '+boldTerms(it.statement)+'</div>');
+        var corr=(it.answer==="F"&&it.correction)?' &nbsp; Replace with: <b>'+esc(it.correction)+'</b>':'';
+        keyParts.push('<div class="keyline"><b>'+(i+1)+'.</b> '+esc(it.answer||"")+corr+' <span class="kdok">'+(it.dok?"[DOK "+it.dok+"]":"")+'</span></div>');
+      });
+    } else if(type==="mc"){
+      var mc=processMC(sec.items||[]);
+      var dist=keyDistribution(mc);
+      var run=maxRun(mc);
+      var distStr=LETTERS.slice(0,4).map(function(L){return L+"="+(dist[L]||0);}).join(", ");
+      verifyBits.push("MC answer spread "+distStr+"; longest same-letter run "+run+".");
+      studentParts.push('<h2>'+secLetterNames.mc+' &nbsp;<span style="font-weight:400;font-size:12px;">('+esc(pts)+' pt each)</span></h2>'+
+        '<div class="directions">'+(confidence?'Choose the BEST answer. Confidence-based scoring: distribute 4 points across the options (all 4 on one answer if certain, split if unsure). Points count only on the correct blank.':'Choose the BEST answer. Circle the letter of the best option.')+'</div>');
+      keyParts.push('<h2>'+secLetterNames.mc+'</h2>');
+      mc.forEach(function(q,i){
+        var optsHtml=q.options.map(function(o,oi){
+          var pre=confidence?'<span class="blank">&nbsp;</span>':'';
+          return '<div class="opt">'+pre+LETTERS[oi]+'. '+esc(o)+'</div>';
+        }).join("");
+        studentParts.push('<div class="q"><span class="q-num">'+(i+1)+'.</span> '+esc(q.stem)+optsHtml+'</div>');
+        keyParts.push('<div class="keyline"><b>'+(i+1)+'.</b> '+LETTERS[q.correctIndex]+' <span class="kdok">'+(q.dok?"[DOK "+q.dok+"]":"")+'</span>'+(q.rationale?'<div class="keyrat">'+esc(q.rationale)+'</div>':'')+'</div>');
+      });
+    } else if(type==="match"){
+      var sets=sec.sets||[];
+      studentParts.push('<h2>'+secLetterNames.match+' &nbsp;<span style="font-weight:400;font-size:12px;">('+esc(pts)+' pt each match)</span></h2>'+
+        '<div class="directions">Write the letter of the best match from Column B in the blank before each Column A item.</div>');
+      keyParts.push('<h2>'+secLetterNames.match+'</h2>');
+      sets.forEach(function(st,si){
+        var topic=st.topic?'<div style="font-weight:700;margin:6px 0;">Set '+(si+1)+': '+esc(st.topic)+'</div>':'<div style="font-weight:700;margin:6px 0;">Set '+(si+1)+'</div>';
+        var A=st.columnA||[], B=st.columnB||[], ans=st.answers||[];
+        var aHtml=A.map(function(a,ai){return '<div class="q"><span class="blank">&nbsp;</span> '+(ai+1)+'. '+esc(a)+'</div>';}).join("");
+        var bHtml=B.map(function(b,bi){return '<div class="q">'+LETTERS[bi]+'. '+esc(b)+'</div>';}).join("");
+        studentParts.push(topic+'<div class="match-cols"><div>'+aHtml+'</div><div>'+bHtml+'</div></div>');
+        var keyPairs=A.map(function(a,ai){var bi=ans[ai];return (ai+1)+"-"+(bi!=null?LETTERS[bi]:"?");}).join(", ");
+        keyParts.push('<div class="keyline"><b>Set '+(si+1)+':</b> '+esc(keyPairs)+'</div>');
+      });
+    } else if(type==="fib"){
+      var items2=sec.items||[];
+      studentParts.push('<h2>'+secLetterNames.fib+' &nbsp;<span style="font-weight:400;font-size:12px;">('+esc(pts)+' pt each)</span></h2>'+
+        '<div class="directions">Fill in each blank with the single most accurate scientific term, value, or structure name.</div>');
+      keyParts.push('<h2>'+secLetterNames.fib+'</h2>');
+      items2.forEach(function(it,i){
+        var sentence=esc(it.sentence||"").replace(/_{2,}/g,'<span class="fibline">&nbsp;</span>');
+        studentParts.push('<div class="q"><span class="q-num">'+(i+1)+'.</span> '+sentence+'</div>');
+        keyParts.push('<div class="keyline"><b>'+(i+1)+'.</b> '+esc(it.answer||"")+' <span class="kdok">'+(it.dok?"[DOK "+it.dok+"]":"")+'</span></div>');
+      });
+    } else if(type==="fr"){
+      var items3=sec.items||[];
+      var chooseOne=!!sec.chooseOne;
+      var dir=chooseOne
+        ? 'CHOOSE ONE of the following '+items3.length+' prompts. Circle the number you select, then answer in the space provided. Only one response is graded ('+esc(pts)+' pts).'
+        : 'Answer ALL '+items3.length+' prompts. For chart items, complete each row. For written items, respond on the lines provided.';
+      studentParts.push('<h2>'+secLetterNames.fr+' &nbsp;<span style="font-weight:400;font-size:12px;">('+esc(pts)+' pts'+(chooseOne?", answer ONE":" each")+')</span></h2>'+
+        '<div class="directions">'+dir+'</div>');
+      keyParts.push('<h2>'+secLetterNames.fr+'</h2>');
+      items3.forEach(function(it,i){
+        var body="";
+        if(it.chart && it.chart.columns && it.chart.columns.length){
+          var cols=it.chart.columns, rows=Math.max(1,parseInt(it.chart.rows)||5);
+          var thead="<tr>"+cols.map(function(c){return "<th>"+esc(c)+"</th>";}).join("")+"</tr>";
+          var trows="";
+          for(var r=0;r<rows;r++){ trows+="<tr>"+cols.map(function(){return "<td>&nbsp;</td>";}).join("")+"</tr>"; }
+          body='<table>'+thead+trows+'</table>';
+        } else {
+          var lines=Math.max(3,parseInt(it.lines)||6);
+          for(var l=0;l<lines;l++){ body+='<div class="writeline"></div>'; }
+        }
+        studentParts.push('<div class="q"><span class="q-num">'+(i+1)+'.</span> '+esc(it.prompt||"")+body+'</div>');
+        keyParts.push('<div class="keyline"><b>'+(i+1)+'.</b> <span class="kdok">'+(it.dok?"[DOK "+it.dok+"]":"")+'</span>'+
+          (it.exampleAnswer?'<div class="keyrat"><b>Model:</b> '+esc(it.exampleAnswer)+'</div>':'')+
+          (it.rubric?'<div class="keyrat"><b>Rubric:</b> '+esc(it.rubric)+'</div>':'')+'</div>');
+      });
+    }
+  });
+  var studentHtml=headerHtml+studentParts.join("\n");
+  var keyHtml=keyHeaderHtml+keyParts.join("\n");
+  var verify=verifyBits.length?verifyBits.join(" "):"Exam built. No multiple-choice section to verify.";
+  return {student:studentHtml,key:keyHtml,verify:verify};
+}
+/* Word (.doc) export via Word-compatible HTML blob */
+function downloadDoc(filename, innerHtml){
+  var pre='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>'+esc(filename)+'</title>'+
+    '<style>@page{size:8.5in 11in;margin:0.75in;} body{font-family:Georgia,\'Times New Roman\',serif;font-size:11pt;line-height:1.4;color:#000;} '+
+    'h1{font-size:16pt;margin:0 0 2pt;} h2{font-size:13pt;border-bottom:1px solid #000;margin:16pt 0 6pt;} '+
+    '.exam-sub{font-size:11pt;margin-bottom:4pt;} .exam-fields{font-size:11pt;border-bottom:1px solid #000;padding-bottom:8pt;margin:10pt 0;} '+
+    '.directions{font-weight:bold;font-size:10.5pt;margin:4pt 0 10pt;} .q{margin-bottom:10pt;} .q-num{font-weight:bold;} '+
+    '.opt{margin:2pt 0 2pt 24pt;} .blank{display:inline-block;min-width:30px;border-bottom:1px solid #000;text-align:center;} '+
+    '.fibline{display:inline-block;min-width:170px;border-bottom:1px solid #000;} .writeline{border-bottom:1px solid #444;height:20pt;margin:4pt 0;} '+
+    'table{border-collapse:collapse;width:100%;margin:6pt 0;} th,td{border:1px solid #000;padding:5pt 6pt;font-size:10.5pt;text-align:left;} th{background:#eee;} '+
+    '.match-cols{width:100%;} .keyline{margin-bottom:6pt;} .keyrat{margin-left:16pt;font-size:10pt;} .kdok{color:#444;font-size:9pt;}</style></head><body>';
+  var post='</body></html>';
+  var blob=new Blob(['﻿'+pre+innerHtml+post],{type:"application/msword"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},400);
+}
+function slug(s){return (s||"exam").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,50)||"exam";}
+function runBuild(){
+  var raw=$("pasteBackInput").value||"";
+  if(!raw.trim()){showToast("⚠ Paste the AI output first.",3200);return;}
+  var data=extractJSON(raw);
+  if(!data||!data.sections){showToast("⚠ Could not find a valid JSON block in that text.",4200);return;}
+  var docs;
+  try{ docs=renderDocuments(data); }
+  catch(e){ showToast("⚠ Build failed: "+e.message,4200); return; }
+  _builtDocs=docs;
+  $("buildVerify").innerHTML='<strong>Verified by the tool:</strong> <span class="dist">'+esc(docs.verify)+'</span> Answer key rebuilt from the AI content, not copied from the AI.';
+  _activeTab="student";
+  $("tabStudent").classList.add("active"); $("tabKey").classList.remove("active");
+  $("examPreview").innerHTML=docs.student;
+  $("buildResult").classList.add("show");
+  $("examPreview").scrollIntoView({behavior:"smooth",block:"nearest"});
+  showToast("✓ Exam built.",2600);
+}
+$("buildExamBtn").addEventListener("click",runBuild);
+$("tabStudent").addEventListener("click",function(){
+  if(!_builtDocs)return;
+  _activeTab="student"; this.classList.add("active"); $("tabKey").classList.remove("active");
+  $("examPreview").innerHTML=_builtDocs.student;
+});
+$("tabKey").addEventListener("click",function(){
+  if(!_builtDocs)return;
+  _activeTab="key"; this.classList.add("active"); $("tabStudent").classList.remove("active");
+  $("examPreview").innerHTML=_builtDocs.key;
+});
+$("printBtn").addEventListener("click",function(){
+  if(!_builtDocs){showToast("Build the exam first.",2600);return;}
+  var html=(_activeTab==="key")?_builtDocs.key:_builtDocs.student;
+  var w=window.open("","_blank");
+  if(!w){showToast("Allow pop-ups to print, or use the Download button.",3800);return;}
+  w.document.write('<html><head><title>Print</title><style>@page{size:8.5in 11in;margin:0.75in;}'+
+    'body{font-family:Georgia,serif;font-size:11pt;line-height:1.4;color:#000;} h1{font-size:16pt;} h2{font-size:13pt;border-bottom:1px solid #000;} '+
+    '.directions{font-weight:bold;font-size:10.5pt;} .q{margin-bottom:10pt;page-break-inside:avoid;} .opt{margin-left:24pt;} '+
+    '.blank{display:inline-block;min-width:30px;border-bottom:1px solid #000;} .fibline{display:inline-block;min-width:170px;border-bottom:1px solid #000;} '+
+    '.writeline{border-bottom:1px solid #444;height:20pt;margin:4pt 0;} table{border-collapse:collapse;width:100%;} th,td{border:1px solid #000;padding:5pt;} th{background:#eee;} '+
+    '.match-cols{display:grid;grid-template-columns:1fr 1fr;gap:20pt;} .exam-fields{border-bottom:1px solid #000;padding-bottom:8pt;} .keyrat{margin-left:16pt;font-size:10pt;} .kdok{color:#444;font-size:9pt;}</style></head><body>'+html+'</body></html>');
+  w.document.close();
+  setTimeout(function(){try{w.focus();w.print();}catch(e){}},350);
+});
+$("dlStudent").addEventListener("click",function(){
+  if(!_builtDocs){showToast("Build the exam first.",2600);return;}
+  var t=(($("examTitle").value.trim())||"exam");
+  downloadDoc(slug(t)+"-student.doc",_builtDocs.student);
+  showToast("✓ Student exam downloaded.",2600);
+});
+$("dlKey").addEventListener("click",function(){
+  if(!_builtDocs){showToast("Build the exam first.",2600);return;}
+  var t=(($("examTitle").value.trim())||"exam");
+  downloadDoc(slug(t)+"-answer-key.doc",_builtDocs.key);
+  showToast("✓ Answer key downloaded.",2600);
+});
+/* Sample payload so the build step can be tried without the AI */
+var SAMPLE={
+  meta:{title:"Module 3 Exam (Sample)",course:"Anatomy & Physiology I",term:"Fall 2026",instructor:"Dr. Sharilyn Rennie"},
+  sections:[
+    {type:"tf",points:1,items:[
+      {statement:"The **supraspinatus** initiates abduction of the arm at the shoulder.",answer:"T",correction:"",dok:2},
+      {statement:"The biceps brachii inserts on the **ulna**.",answer:"F",correction:"radius",dok:2},
+      {statement:"The **diaphragm** is the primary muscle of quiet inspiration.",answer:"T",correction:"",dok:1},
+      {statement:"The lateral rectus is innervated by the **oculomotor** nerve.",answer:"F",correction:"abducens",dok:3}
+    ]},
+    {type:"mc",points:1,items:[
+      {stem:"Which rotator cuff muscle inserts on the lesser tubercle of the humerus?",options:["Supraspinatus","Infraspinatus","Subscapularis","Teres minor"],correctIndex:2,rationale:"Subscapularis is the only rotator cuff muscle inserting on the lesser tubercle; the others insert on the greater tubercle.",dok:2},
+      {stem:"A patient cannot laterally rotate the arm. Which muscle pair is most likely impaired?",options:["Infraspinatus and teres minor","Subscapularis and pectoralis major","Supraspinatus and deltoid","Teres major and latissimus dorsi"],correctIndex:0,rationale:"Infraspinatus and teres minor are the primary lateral rotators of the humerus.",dok:3},
+      {stem:"Which cranial nerve innervates the superior oblique muscle?",options:["CN III","CN IV","CN VI","CN VII"],correctIndex:1,rationale:"The trochlear nerve (CN IV) supplies the superior oblique.",dok:1},
+      {stem:"Damage to CN VI would most affect which eye movement?",options:["Elevation","Depression","Lateral movement (abduction)","Medial movement (adduction)"],correctIndex:2,rationale:"CN VI (abducens) drives the lateral rectus, which abducts the eye.",dok:2}
+    ]},
+    {type:"fib",points:1,items:[
+      {sentence:"The functional contractile unit of a muscle fiber is the ___.",answer:"sarcomere",dok:1},
+      {sentence:"Calcium released during contraction binds to the regulatory protein ___.",answer:"troponin",dok:2}
+    ]},
+    {type:"fr",points:10,chooseOne:false,items:[
+      {prompt:"Complete the chart for the four rotator cuff muscles.",chart:{columns:["Muscle","Origin","Insertion","Action"],rows:4},lines:0,exampleAnswer:"Supraspinatus: supraspinous fossa; greater tubercle; abduction. Infraspinatus: infraspinous fossa; greater tubercle; lateral rotation. Teres minor: lateral border scapula; greater tubercle; lateral rotation. Subscapularis: subscapular fossa; lesser tubercle; medial rotation.",rubric:"1 pt per correct cell attribute; full credit requires all four muscles with correct insertion and action.",dok:2}
+    ]}
+  ]
+};
+$("loadSampleBtn").addEventListener("click",function(){
+  $("pasteBackInput").value="```json\n"+JSON.stringify(SAMPLE,null,2)+"\n```";
+  showToast("Sample loaded. Click Build exam & key.",2800);
+});
+/* ====================================================================
+   INIT
+   ==================================================================== */
+renderSystems();
+calcDifficulty();
+calcPoints();
+})();
+</script>
+<script>
+/* iframe height-sender for Kajabi embedding */
+(function() {
+  function sendHeight() {
+    var id = (window.frameElement && window.frameElement.id) || 'ap-exam-builder';
+    var height = document.documentElement.scrollHeight;
+    try { window.parent.postMessage({type: 'iframe-height', id: id, height: height}, '*'); } catch(e) {}
+  }
+  window.addEventListener('load', sendHeight);
+  window.addEventListener('resize', sendHeight);
+  if (typeof ResizeObserver !== 'undefined') {
+    try { new ResizeObserver(sendHeight).observe(document.body); } catch(e) {}
+  }
+})();
+</script>
+</body>
+</html>
