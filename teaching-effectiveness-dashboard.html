@@ -477,9 +477,14 @@ function makeSnapshot(){
 }
 const round = (x,p=1)=> (x==null||isNaN(x))?null:Math.round(x*10**p)/10**p;
 // Save the current analysis as a snapshot (dedupe on course+term+stage+assessment)
+// Returns the snap on success, the string 'cancelled' if the user declined an overwrite, or null if nothing to save.
 function saveCurrentSnapshot(){ const snap=makeSnapshot(); if(!snap) return null;
   const db=loadDB(); const ix=db.findIndex(s=>s.course===snap.course&&s.term===snap.term&&s.stage===snap.stage&&s.assessment===snap.assessment);
-  if(ix>=0)db[ix]=snap; else db.push(snap); saveDB(db); return snap; }
+  if(ix>=0){
+    if(!confirm('A snapshot already exists for:\n\n'+snap.course+'  ·  '+snap.term+'  ·  '+snap.stage+'  ·  '+snap.assessment+'\n\nSaving now will OVERWRITE it.\n\nIf you meant to log a DIFFERENT semester, click Cancel, then change the Semester/Term (and Stage) at the top of the page first, then Save again.\n\nOverwrite the existing snapshot?')) return 'cancelled';
+    db[ix]=snap;
+  } else db.push(snap);
+  saveDB(db); return snap; }
 
 /* ==========================================================================
    4. INTERPRETATION ENGINE  ("so what")
@@ -1425,7 +1430,7 @@ function renderLongitudinal(){
       <p class="sub" style="margin-top:14px">To compare across semesters, repeat for each term: load its CSV, set the term up top, Analyze, and save. Then the checkboxes and progress board appear here.</p>
     </div>`;
     if(canSave){ document.getElementById('longQuickSave').addEventListener('click',()=>{
-      const s=saveCurrentSnapshot(); if(s){ renderLongitudinal(); } else { alert('Analyze an assessment first.'); } }); }
+      const s=saveCurrentSnapshot(); if(s==='cancelled') return; if(s){ renderLongitudinal(); } else { alert('Analyze an assessment first.'); } }); }
     return;
   }
   const courses=['All',...new Set(db.map(s=>s.course||'(unlabeled)'))];
@@ -1682,11 +1687,10 @@ function renderLongIO(){
         :'<p class="sub" style="margin-top:10px">No changes logged yet.</p>'}
     </div>`;
   document.getElementById('saveSnap').addEventListener('click',()=>{
-    const snap=makeSnapshot(); if(!snap){ alert('Load and analyze an assessment first.'); return; }
-    const db=loadDB(); // dedupe same course+term+stage+assessment
-    const ix=db.findIndex(s=>s.course===snap.course&&s.term===snap.term&&s.stage===snap.stage&&s.assessment===snap.assessment);
-    if(ix>=0) db[ix]=snap; else db.push(snap); saveDB(db);
-    document.getElementById('saveMsg').textContent='Saved '+snap.course+' · '+snap.term+' · '+snap.stage+' · '+snap.assessment; renderLongIO();
+    const s=saveCurrentSnapshot();
+    if(s==='cancelled') return;
+    if(!s){ alert('Load and analyze an assessment first.'); return; }
+    document.getElementById('saveMsg').textContent='Saved '+s.course+' · '+s.term+' · '+s.stage+' · '+s.assessment; renderLongIO();
   });
   el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ const db=loadDB(); db.splice(parseInt(b.dataset.del),1); saveDB(db); renderLongIO(); }));
   document.getElementById('chgAdd').addEventListener('click',()=>{ const text=document.getElementById('chgText').value.trim();
@@ -1753,10 +1757,10 @@ function boxPlotSVG(arr){ const a=Stat.clean(arr); if(a.length<4) return '<p cla
    ========================================================================== */
 function renderAll(){
   destroyCharts();
-  renderOverview(); renderInsights(); renderPerformance(); renderGrowth(); renderCompetency();
-  renderSLO(); renderBehavior(); renderTBL(); renderEngagement(); renderWithdrawal();
-  renderAI(); renderVoice(); renderLongIO();
-  if(document.querySelector('.nav-btn.active')?.dataset.view==='longitudinal') renderLongitudinal();
+  const steps=[renderOverview,renderInsights,renderPerformance,renderGrowth,renderCompetency,
+    renderSLO,renderBehavior,renderTBL,renderEngagement,renderWithdrawal,renderAI,renderVoice,renderLongIO];
+  steps.forEach(fn=>{ try{ fn(); }catch(e){ console.error('Section failed to render:',fn.name,e); } });
+  try{ if(document.querySelector('.nav-btn.active')?.dataset.view==='longitudinal') renderLongitudinal(); }catch(e){ console.error('Longitudinal render failed:',e); }
   sendHeight();
 }
 
@@ -1851,7 +1855,7 @@ document.getElementById('csvInput').addEventListener('change',e=>{
       State.raw=gb; State.isDemo=false;
       populateAssessments();
       setStatus('loaded',gb.students.length+' students · '+gb.assessCols.length+' columns');
-      document.getElementById('fileHint').textContent='Loaded '+f.name+'. Names were anonymized in your browser and are not stored. Pick the assessment to analyze, then explore the dashboards. Save a snapshot to add this to your longitudinal history.';
+      document.getElementById('fileHint').innerHTML='Loaded '+esc(f.name)+' ('+gb.students.length+' students). <strong>Important: this file replaced what was on screen. Before you Save a snapshot, set the Course, Semester/Term, and Stage at the top for THIS file</strong> — the dashboard cannot read the semester from the CSV, so each new semester needs its own Term selected or it will overwrite the last one. Names were anonymized in your browser and are not stored.';
     }
     document.getElementById('csvInput').value=''; // allow re-upload of same filename
     renderAll();
