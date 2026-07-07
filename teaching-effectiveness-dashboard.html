@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teaching Effectiveness Dashboard &middot; Anatomy Learning Analytics</title>
+<meta name="description" content="Teaching Effectiveness Dashboard. Upload a Canvas gradebook CSV after every exam and get performance, growth, competency, engagement, withdrawal, and longitudinal analytics with plain-language interpretation. Student data stays in your browser.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/*
+  ============================================================
+  TEACHING EFFECTIVENESS DASHBOARD  ·  Dr. Sharilyn Rennie
+  Anatomy Learning Analytics (ALAD)
+  Branding matched to uploaded index.html (MCAS palette):
+    Navy #0B1530, Rust #8B3A2E, Gold #C9A14A, Cream #F5F1E8, Dark #060A18
+  Fonts: Plus Jakarta Sans
+  Privacy: student rows are session-only. Only anonymized
+  class-level aggregates are written to localStorage (the
+  longitudinal database) and to the export file. No names,
+  no IDs, no emails are ever persisted.
+  ============================================================
+*/
+@import url('https://cdn.jsdelivr.net/npm/@fontsource-variable/plus-jakarta-sans/index.css');
+
+:root{
+  --navy:#0B1530; --navy-deep:#142A36; --rust:#8B3A2E; --rust-hover:#A0452F;
+  --gold:#C9A14A; --gold-soft:#D9B065; --cream:#F5F1E8; --dark:#060A18;
+  --white:#FFFFFF; --offwhite:#FAFAF9; --line:rgba(11,21,48,0.14);
+  --line-strong:rgba(11,21,48,0.22); --good:#2E7D5B; --warn:#8B3A2E; --mid:#C9A14A;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;font-size:16px;line-height:1.6;}
+body{
+  font-family:'Plus Jakarta Sans Variable','Plus Jakarta Sans',system-ui,sans-serif;
+  background:var(--offwhite); color:var(--navy);
+}
+img{max-width:100%;display:block;}
+a{color:inherit;}
+h1,h2,h3,h4{letter-spacing:-0.015em;}
+
+/* focus */
+a:focus-visible,button:focus-visible,summary:focus-visible,select:focus-visible,
+input:focus-visible,[tabindex]:focus-visible{
+  outline:3px solid var(--rust); outline-offset:2px; border-radius:4px;
+}
+.skip-link{position:absolute;top:-100px;left:8px;background:var(--navy);color:var(--cream);
+  padding:12px 20px;text-decoration:none;font-size:13px;font-weight:700;border-radius:4px;z-index:9999;}
+.skip-link:focus{top:8px;}
+
+/* ===== LAYOUT ===== */
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh;}
+.sidebar{background:var(--dark);color:var(--cream);padding:24px 18px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.main{padding:28px max(24px,3vw) 64px;min-width:0;}
+
+/* sidebar brand */
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;margin-bottom:22px;}
+.brand svg{height:44px;width:auto;flex-shrink:0;}
+.brand-text{display:flex;flex-direction:column;gap:2px;}
+.brand-title{font-size:16px;font-weight:800;color:var(--cream);line-height:1.05;}
+.brand-title .a{color:var(--gold);}
+.brand-sub{font-size:9px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--cream);opacity:0.66;}
+
+.nav-group-label{font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);
+  opacity:0.9;margin:18px 6px 8px;}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;
+  color:var(--cream);font:inherit;font-size:13.5px;font-weight:600;padding:9px 10px;border-radius:6px;margin-bottom:2px;
+  transition:background 0.15s ease;}
+.nav-btn:hover{background:rgba(245,241,232,0.08);}
+.nav-btn.active{background:var(--rust);color:var(--white);}
+.nav-btn .num{font-size:10px;font-weight:800;opacity:0.7;min-width:16px;}
+.nav-btn.active .num{opacity:0.9;}
+
+/* ===== TOP CONTROL BAR ===== */
+.controls{background:var(--white);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 1px 3px rgba(11,21,48,0.06);padding:18px 20px;margin-bottom:24px;}
+.controls-row{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:flex-end;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust);}
+.field select,.field input[type=text],.field input[type=number]{
+  font:inherit;font-size:13.5px;padding:8px 10px;border:1px solid var(--line-strong);border-radius:6px;background:var(--white);color:var(--navy);min-width:150px;}
+.btn{font:inherit;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  padding:11px 18px;border-radius:6px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:background 0.18s ease,transform 0.15s ease;}
+.btn-primary{background:var(--rust);color:var(--white);}
+.btn-primary:hover{background:var(--rust-hover);}
+.btn-gold{background:var(--gold);color:var(--navy);}
+.btn-gold:hover{background:var(--gold-soft);}
+.btn-ghost{background:none;color:var(--navy);border:1px solid var(--line-strong);}
+.btn-ghost:hover{background:var(--offwhite);}
+.file-hint{font-size:12px;color:var(--navy);opacity:0.7;margin:10px 0 0;}
+.status-pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;}
+.status-loaded{background:rgba(46,125,91,0.12);color:var(--good);}
+.status-demo{background:rgba(201,161,74,0.16);color:#7a5f1e;}
+.status-empty{background:rgba(139,58,46,0.1);color:var(--rust);}
+
+/* visually-hidden file input, styled label acts as button */
+input[type=file]{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+
+/* ===== PAGE HEADER ===== */
+.page-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--rust);margin:0 0 8px;}
+.page-title{font-size:28px;font-weight:800;color:var(--navy);margin:0 0 8px;}
+.page-intro{font-size:14.5px;color:var(--navy);opacity:0.82;max-width:760px;margin:0 0 24px;}
+
+/* ===== CARDS / GRID ===== */
+.grid{display:grid;gap:16px;}
+.g2{grid-template-columns:repeat(2,1fr);}
+.g3{grid-template-columns:repeat(3,1fr);}
+.g4{grid-template-columns:repeat(4,1fr);}
+.card{background:var(--white);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 3px rgba(11,21,48,0.06);padding:20px 22px;}
+.card h3{font-size:15px;font-weight:800;margin:0 0 4px;color:var(--navy);}
+.card .sub{font-size:12px;color:var(--navy);opacity:0.66;margin:0 0 14px;}
+
+/* stat tiles */
+.stat{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:0 1px 3px rgba(11,21,48,0.06);}
+.stat .label{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--rust);margin:0 0 8px;}
+.stat .value{font-size:30px;font-weight:800;color:var(--navy);line-height:1;font-variant-numeric:tabular-nums;}
+.stat .value.sm{font-size:22px;}
+.stat .foot{font-size:11.5px;color:var(--navy);opacity:0.7;margin:8px 0 0;}
+.stat.accent-gold{border-top:3px solid var(--gold);}
+.stat.accent-rust{border-top:3px solid var(--rust);}
+.stat.accent-navy{border-top:3px solid var(--navy);}
+
+/* interpretation callout */
+.interp{background:var(--cream);border-left:4px solid var(--gold);border-radius:8px;padding:14px 18px;margin-top:14px;}
+.interp .so{font-size:10px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--rust);margin:0 0 6px;}
+.interp p{margin:0;font-size:13.5px;line-height:1.6;color:var(--navy);}
+
+/* tables */
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px;}
+.tbl th,.tbl td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);color:var(--navy);vertical-align:top;}
+.tbl th{background:var(--cream);font-weight:800;font-size:11.5px;letter-spacing:0.03em;text-transform:uppercase;}
+.tbl td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;}
+.tbl tr:hover td{background:var(--offwhite);}
+
+.chart-wrap{position:relative;height:300px;}
+.chart-wrap.tall{height:360px;}
+
+/* heatmap */
+.heat{display:grid;gap:3px;}
+.heat-cell{aspect-ratio:1.6/1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--navy);}
+.heat-lab{font-size:10px;font-weight:700;color:var(--navy);opacity:0.7;display:flex;align-items:center;}
+
+/* section visibility */
+.view{display:none;}
+.view.active{display:block;}
+
+/* pill badges for competency */
+.badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;}
+.b-comp{background:rgba(46,125,91,0.14);color:var(--good);}
+.b-near{background:rgba(201,161,74,0.2);color:#7a5f1e;}
+.b-below{background:rgba(139,58,46,0.12);color:var(--rust);}
+.b-current{background:var(--gold);color:var(--navy);}
+
+.empty-note{background:var(--white);border:1px dashed var(--line-strong);border-radius:12px;padding:28px;text-align:center;color:var(--navy);opacity:0.75;font-size:14px;}
+
+.foot-byline{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--rust);}
+.privacy-note{font-size:12px;color:var(--navy);opacity:0.7;margin-top:8px;line-height:1.5;}
+
+@media (max-width:1080px){ .g4{grid-template-columns:repeat(2,1fr);} .g3{grid-template-columns:repeat(2,1fr);} }
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;}
+  .sidebar{position:static;height:auto;}
+  .g2,.g3,.g4{grid-template-columns:1fr;}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
+<div class="app">
+
+  <!-- ===== SIDEBAR ===== -->
+  <nav class="sidebar" aria-label="Dashboard sections">
+    <a href="#" class="brand" target="_top" aria-label="Teaching Effectiveness Dashboard home" onclick="return false;">
+      <svg viewBox="40 10 125 148" role="img" aria-hidden="true" focusable="false">
+        <g transform="translate(0,18)">
+          <g transform="translate(60,0) rotate(8 0 130)"><circle cx="0" cy="20" r="10" fill="#F5F1E8"/><path d="M 0,32 C -10,32 -16,36 -16,42 C -16,55 -13,68 -11,82 C -10,100 -12,118 -14,130 L 14,130 C 12,118 10,100 11,82 C 13,68 16,55 16,42 C 16,36 10,32 0,32 Z" fill="#F5F1E8"/></g>
+          <g transform="translate(100,0)"><circle cx="0" cy="10" r="11" fill="#8B3A2E"/><path d="M 0,22 C -11,22 -17,26 -17,34 C -17,52 -14,70 -12,86 C -11,108 -13,122 -15,132 L 15,132 C 13,122 11,108 12,86 C 14,70 17,52 17,34 C 17,26 11,22 0,22 Z" fill="#8B3A2E"/></g>
+          <g transform="translate(140,0) rotate(-8 0 130)"><circle cx="0" cy="20" r="10" fill="#C9A14A"/><path d="M 0,32 C -10,32 -16,36 -16,42 C -16,55 -13,68 -11,82 C -10,100 -12,118 -14,130 L 14,130 C 12,118 10,100 11,82 C 13,68 16,55 16,42 C 16,36 10,32 0,32 Z" fill="#C9A14A"/></g>
+        </g>
+      </svg>
+      <span class="brand-text">
+        <span class="brand-title">Teaching <span class="a">Effectiveness</span></span>
+        <span class="brand-sub">Learning Analytics</span>
+      </span>
+    </a>
+
+    <div class="nav-group-label">Dashboards</div>
+    <div id="navList"></div>
+
+    <div class="nav-group-label">Data</div>
+    <button class="nav-btn" data-view="longitudinal-io"><span class="num">DB</span> Longitudinal database</button>
+  </nav>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main" id="main">
+
+    <!-- CONTROL BAR -->
+    <div class="controls">
+      <div class="controls-row">
+        <div class="field">
+          <label for="courseSel">Course / class</label>
+          <input type="text" id="courseSel" list="courseList" placeholder="e.g. BIO 431" autocomplete="off">
+          <datalist id="courseList">
+            <option value="BIO 004"></option>
+            <option value="BIO 304"></option>
+            <option value="BIO 430"></option>
+            <option value="BIO 431"></option>
+          </datalist>
+        </div>
+        <div class="field">
+          <label for="termSel">Semester / term</label>
+          <select id="termSel"></select>
+        </div>
+        <div class="field">
+          <label for="stageSel">Stage</label>
+          <select id="stageSel">
+            <option>Beginning</option>
+            <option>Midterm</option>
+            <option selected>End of semester</option>
+            <option>Final</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="assessSel">Assessment</label>
+          <select id="assessSel"></select>
+        </div>
+        <div class="field">
+          <label for="passThresh">Pass %</label>
+          <input type="number" id="passThresh" value="60" min="0" max="100" step="1" style="min-width:80px">
+        </div>
+        <div class="field">
+          <label for="compThresh">Competency %</label>
+          <input type="number" id="compThresh" value="80" min="0" max="100" step="1" style="min-width:90px">
+        </div>
+        <label class="btn btn-primary" for="csvInput" role="button" tabindex="0"
+          onkeydown="if(event.key==='Enter'||event.key===' '){document.getElementById('csvInput').click();event.preventDefault();}">
+          Upload Canvas CSV
+        </label>
+        <input type="file" id="csvInput" accept=".csv,text/csv" aria-label="Upload Canvas gradebook CSV">
+        <button class="btn btn-gold" id="analyzeBtn">Analyze assessment</button>
+        <button class="btn btn-ghost" id="demoBtn">Load demo data</button>
+        <label style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--navy);cursor:pointer">
+          <input type="checkbox" id="mergeMode"> Merge into current class (keep all students)
+        </label>
+        <span id="statusPill" class="status-pill status-empty" role="status" aria-live="polite">No data loaded</span>
+      </div>
+      <p class="file-hint" id="fileHint">Upload a Canvas gradebook export, pick the term and which assessment column to analyze, then Analyze. Student names never leave your browser and are never saved. Only anonymized class aggregates are stored in the longitudinal database.</p>
+    </div>
+
+    <!-- VIEWS render here -->
+    <div id="views"></div>
+
+    <p class="foot-byline">Dr. Sharilyn Rennie &middot; Teaching Effectiveness Dashboard</p>
+    <p class="privacy-note">Student names, IDs, and emails are processed in memory only and are discarded when you close this page. The longitudinal database and any export file contain class-level aggregates only.</p>
+  </main>
+</div>
+
+<script>
+/* ==========================================================================
+   1. STATISTICS ENGINE
+   ========================================================================== */
+const Stat = (() => {
+  const clean = a => a.filter(x => x !== null && x !== undefined && !isNaN(x)).map(Number);
+  const sum = a => a.reduce((s,x)=>s+x,0);
+  const mean = a => a.length ? sum(a)/a.length : NaN;
+  function median(a){ if(!a.length) return NaN; const s=[...a].sort((x,y)=>x-y); const m=Math.floor(s.length/2);
+    return s.length%2 ? s[m] : (s[m-1]+s[m])/2; }
+  function mode(a){ if(!a.length) return NaN; const c={}; let best=a[0],bc=0;
+    a.forEach(v=>{const k=Math.round(v*100)/100; c[k]=(c[k]||0)+1; if(c[k]>bc){bc=c[k];best=k;}});
+    return bc>1?best:NaN; }
+  function variance(a){ if(a.length<2) return NaN; const m=mean(a); return sum(a.map(x=>(x-m)**2))/(a.length-1); }
+  const sd = a => Math.sqrt(variance(a));
+  const min = a => a.length?Math.min(...a):NaN;
+  const max = a => a.length?Math.max(...a):NaN;
+  const range = a => max(a)-min(a);
+  function quantile(a,q){ if(!a.length) return NaN; const s=[...a].sort((x,y)=>x-y); const pos=(s.length-1)*q;
+    const b=Math.floor(pos), r=pos-b; return s[b+1]!==undefined ? s[b]+r*(s[b+1]-s[b]) : s[b]; }
+  const iqr = a => quantile(a,0.75)-quantile(a,0.25);
+  const cv = a => (sd(a)/mean(a))*100;
+  function ci95(a){ if(a.length<2) return [NaN,NaN]; const m=mean(a), se=sd(a)/Math.sqrt(a.length);
+    const t=tCrit(a.length-1); return [m-t*se, m+t*se]; }
+  function tCrit(df){ // ~two-tailed 95% critical t
+    if(df>=200) return 1.972; if(df<1) return 12.71;
+    const table={1:12.71,2:4.303,3:3.182,4:2.776,5:2.571,6:2.447,7:2.365,8:2.306,9:2.262,10:2.228,
+      12:2.179,15:2.131,20:2.086,25:2.060,30:2.042,40:2.021,60:2.000,120:1.980};
+    const keys=Object.keys(table).map(Number); let k=keys[0];
+    for(const kk of keys){ if(df>=kk) k=kk; } return table[k]; }
+
+  // regularized incomplete beta (Numerical Recipes) for t and F p-values
+  function betacf(x,a,b){ const MAXIT=200, EPS=3e-12, FPMIN=1e-300;
+    let qab=a+b, qap=a+1, qam=a-1, c=1, d=1-qab*x/qap;
+    if(Math.abs(d)<FPMIN) d=FPMIN; d=1/d; let h=d;
+    for(let m=1;m<=MAXIT;m++){ let m2=2*m;
+      let aa=m*(b-m)*x/((qam+m2)*(a+m2));
+      d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN; c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN; d=1/d; h*=d*c;
+      aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+      d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN; c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN; d=1/d;
+      let del=d*c; h*=del; if(Math.abs(del-1)<EPS) break; }
+    return h; }
+  function gammaln(x){ const c=[76.18009172947146,-86.50532032941677,24.01409824083091,
+    -1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+    let y=x, tmp=x+5.5; tmp-=(x+0.5)*Math.log(tmp); let ser=1.000000000190015;
+    for(let j=0;j<6;j++){ y++; ser+=c[j]/y; } return -tmp+Math.log(2.5066282746310005*ser/x); }
+  function betai(a,b,x){ if(x<=0) return 0; if(x>=1) return 1;
+    const bt=Math.exp(gammaln(a+b)-gammaln(a)-gammaln(b)+a*Math.log(x)+b*Math.log(1-x));
+    if(x<(a+1)/(a+b+2)) return bt*betacf(x,a,b)/a; else return 1-bt*betacf(1-x,b,a)/b; }
+
+  function tTestP(t,df){ if(!isFinite(t)||df<=0) return NaN; const x=df/(df+t*t); return betai(df/2,0.5,x); } // two-tailed
+  function fTestP(F,d1,d2){ if(!isFinite(F)||F<=0) return NaN; return betai(d2/2,d1/2,d2/(d2+d1*F)); }
+
+  function pearson(x,y){ const n=x.length; if(n<3) return {r:NaN,r2:NaN,p:NaN,slope:NaN,intercept:NaN,n};
+    const mx=mean(x),my=mean(y); let sxy=0,sxx=0,syy=0;
+    for(let i=0;i<n;i++){ sxy+=(x[i]-mx)*(y[i]-my); sxx+=(x[i]-mx)**2; syy+=(y[i]-my)**2; }
+    const r = sxy/Math.sqrt(sxx*syy);
+    const slope = sxy/sxx, intercept = my - slope*mx;
+    const df=n-2; const t=r*Math.sqrt(df/(1-r*r));
+    return {r, r2:r*r, p:tTestP(t,df), slope, intercept, n}; }
+
+  function pairedT(a,b){ // arrays aligned per student
+    const d=[]; for(let i=0;i<a.length;i++){ if(a[i]!=null&&b[i]!=null&&!isNaN(a[i])&&!isNaN(b[i])) d.push(b[i]-a[i]); }
+    const n=d.length; if(n<2) return {n,meanDiff:NaN,t:NaN,p:NaN,d:NaN};
+    const md=mean(d), s=sd(d), t=md/(s/Math.sqrt(n)); const cohen=md/s;
+    return {n, meanDiff:md, t, p:tTestP(t,n-1), d:cohen}; }
+
+  function indepT(a,b){ const A=clean(a),B=clean(b); const na=A.length,nb=B.length;
+    if(na<2||nb<2) return {t:NaN,p:NaN,d:NaN,na,nb,ma:mean(A),mb:mean(B)};
+    const ma=mean(A),mb=mean(B),va=variance(A),vb=variance(B);
+    const t=(ma-mb)/Math.sqrt(va/na+vb/nb);
+    const df=Math.pow(va/na+vb/nb,2)/((va*va)/(na*na*(na-1))+(vb*vb)/(nb*nb*(nb-1)));
+    const sp=Math.sqrt(((na-1)*va+(nb-1)*vb)/(na+nb-2)); const cohen=(ma-mb)/sp;
+    return {t, p:tTestP(t,df), d:cohen, na, nb, ma, mb}; }
+
+  function anova(groups){ const g=groups.map(clean).filter(x=>x.length); const k=g.length;
+    if(k<2) return {F:NaN,p:NaN,k};
+    const all=g.flat(); const gm=mean(all); let ssb=0,ssw=0,N=all.length;
+    g.forEach(gr=>{ const m=mean(gr); ssb+=gr.length*(m-gm)**2; gr.forEach(v=>ssw+=(v-m)**2); });
+    const dfb=k-1, dfw=N-k; const msb=ssb/dfb, msw=ssw/dfw; const F=msb/msw;
+    return {F, p:fTestP(F,dfb,dfw), k, dfb, dfw}; }
+
+  function describe(arr){ const a=clean(arr);
+    return {n:a.length, mean:mean(a), median:median(a), mode:mode(a), sd:sd(a), variance:variance(a),
+      min:min(a), max:max(a), range:range(a), q1:quantile(a,0.25), q3:quantile(a,0.75), iqr:iqr(a),
+      cv:cv(a), ci:ci95(a)}; }
+
+  function letterGrade(pct){ if(pct>=90)return 'A'; if(pct>=80)return 'B'; if(pct>=70)return 'C'; if(pct>=60)return 'D'; return 'F'; }
+  function histogram(arr,binSize=10,lo=0,hi=100){ const a=clean(arr); const bins=[]; const labels=[];
+    for(let s=lo;s<hi;s+=binSize){ bins.push(0); labels.push(s+'-'+(s+binSize)); }
+    a.forEach(v=>{ let idx=Math.floor((v-lo)/binSize); if(idx>=bins.length)idx=bins.length-1; if(idx<0)idx=0; bins[idx]++; });
+    return {bins,labels}; }
+
+  return {clean,sum,mean,median,mode,variance,sd,min,max,range,quantile,iqr,cv,ci95,
+    pearson,pairedT,indepT,anova,describe,letterGrade,histogram,tTestP,fTestP,betai};
+})();
+
+/* ==========================================================================
+   2. CSV PARSER  (Canvas-aware, tolerant)
+   ========================================================================== */
+function parseCSV(text){
+  const rows=[]; let row=[], field='', inQ=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(inQ){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQ=false; } else field+=c; }
+    else { if(c==='"') inQ=true; else if(c===','){ row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c==='\r'){ } else field+=c; } }
+  if(field.length||row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r=>r.some(c=>c.trim()!==''));
+}
+
+// Identify assessment columns from a Canvas export
+function analyzeGradebook(rows){
+  if(rows.length<2) return null;
+  const header=rows[0].map(h=>h.trim());
+  // Canvas: row 2 often "Points Possible". Detect.
+  let pointsRow=null, dataStart=1;
+  const secondFirst=(rows[1][0]||'').toLowerCase();
+  if(secondFirst.includes('points possible')||secondFirst.includes('manual posting')){ pointsRow=rows[1]; dataStart=2; }
+  // skip additional non-student meta rows
+  while(dataStart<rows.length){ const f=(rows[dataStart][0]||'').toLowerCase();
+    if(f.includes('points possible')||f.includes('manual posting')||f===''){ dataStart++; } else break; }
+
+  const idCols=[]; const skip=/^(student|id|sis user id|sis login id|section|integration id|root account)/i;
+  header.forEach((h,i)=>{ if(skip.test(h)) idCols.push(i); });
+
+  // assessment columns = numeric-bearing, not id, not obviously category totals we still keep score-like
+  const assessCols=[];
+  header.forEach((h,i)=>{
+    if(idCols.includes(i)) return;
+    if(!h) return;
+    // sample data for numeric-ness
+    let numeric=0,total=0;
+    for(let r=dataStart;r<rows.length;r++){ const v=(rows[r][i]||'').trim(); if(v===''){continue;} total++; if(!isNaN(parseFloat(v.replace('%','')))) numeric++; }
+    if(total>0 && numeric/total>0.5) assessCols.push({idx:i, name:h, points: pointsRow?parseFloat((pointsRow[i]||'').trim())||null:null});
+  });
+
+  const nameIdx = header.findIndex(h=>/^student/i.test(h));
+  const sectionIdx = header.findIndex(h=>/^section/i.test(h));
+
+  const students=[];
+  for(let r=dataStart;r<rows.length;r++){
+    const raw=rows[r]; const nm=(nameIdx>=0?raw[nameIdx]:raw[0])||'';
+    if(!nm.trim()) continue;
+    if(/test student/i.test(nm)) continue;
+    const rec={ _name:nm.trim(), section:(sectionIdx>=0?(raw[sectionIdx]||'').trim():''), scores:{} };
+    assessCols.forEach(c=>{ const v=(raw[c.idx]||'').trim().replace('%',''); rec.scores[c.name]= v===''?null:parseFloat(v); });
+    students.push(rec);
+  }
+  return {assessCols, students, header};
+}
+
+// Convert a raw score column to percentages using points possible (fallback: assume already %)
+function toPercent(students, colName, pointsPossible){
+  return students.map(s=>{ const v=s.scores[colName]; if(v==null||isNaN(v)) return null;
+    if(pointsPossible && pointsPossible>0){ // if value already looks like a percent (<=100 and points>100) keep raw%
+      return (v/pointsPossible)*100; }
+    return v; });
+}
+
+/* ==========================================================================
+   3. STATE  +  ANONYMIZATION  +  LONGITUDINAL STORE
+   ========================================================================== */
+const LS_KEY='ted_longitudinal_v1';
+const State = {
+  raw:null,            // {assessCols, students}
+  isDemo:false,
+  course:'',
+  term:null,
+  stage:'End of semester',
+  primaryCol:null,     // selected assessment column name
+  passThresh:60,
+  compThresh:80,
+  anonMap:null,        // name -> Student NNN (session only)
+};
+
+// Deterministic pseudonym: same name -> same code on every upload, so the
+// SAME student can be tracked across exams (who drops out) WITHOUT ever
+// storing the name. Names are hashed, then discarded.
+function nameHash(str){ // FNV-1a 32-bit, hex
+  const norm=String(str).trim().toLowerCase().replace(/\s+/g,' ');
+  let h=0x811c9dc5;
+  for(let i=0;i<norm.length;i++){ h^=norm.charCodeAt(i); h=Math.imul(h,0x01000193); }
+  return (h>>>0).toString(36).toUpperCase().padStart(6,'0').slice(-6);
+}
+function anonymize(students){
+  // Stable code from the name hash; a short readable index for display only.
+  const seen=new Map();
+  return students.map(s=>{ const code=nameHash(s._name);
+    if(!seen.has(code)) seen.set(code, seen.size+1);
+    return { id:'Student '+String(seen.get(code)).padStart(3,'0')+' ('+code+')', code, section:s.section, scores:s.scores };
+  });
+}
+
+// Longitudinal DB: array of snapshots {term, assessment, date, n, aggregates...}
+function loadDB(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||[]; }catch(e){ return []; } }
+function saveDB(db){ try{ localStorage.setItem(LS_KEY, JSON.stringify(db)); }catch(e){ alert('Could not save to browser storage: '+e.message); } }
+// Course change log (interventions / redesign notes) — context for longitudinal comparisons. No student data.
+const CHANGES_KEY='ted_changes_v1';
+function loadChanges(){ try{ return JSON.parse(localStorage.getItem(CHANGES_KEY))||[]; }catch(e){ return []; } }
+function saveChanges(a){ try{ localStorage.setItem(CHANGES_KEY, JSON.stringify(a)); }catch(e){ alert('Could not save change log: '+e.message); } }
+
+function makeSnapshot(){
+  if(!State.raw||!State.primaryCol) return null;
+  const col=State.raw.assessCols.find(c=>c.name===State.primaryCol);
+  const pct=toPercent(State.raw.students, State.primaryCol, col?col.points:null);
+  const d=Stat.describe(pct);
+  const valid=Stat.clean(pct);
+  const passN=valid.filter(v=>v>=State.passThresh).length;
+  const compN=valid.filter(v=>v>=State.compThresh).length;
+  const dfwN=valid.filter(v=>v<State.passThresh).length; // approx DFW share on this assessment
+  const grades={A:0,B:0,C:0,D:0,F:0}; valid.forEach(v=>grades[Stat.letterGrade(v)]++);
+  return {
+    course:State.course||'(unlabeled)', term:State.term, stage:State.stage||'(unstaged)', assessment:State.primaryCol, date:new Date().toISOString().slice(0,10),
+    n:valid.length, mean:round(d.mean), median:round(d.median), sd:round(d.sd), cv:round(d.cv),
+    min:round(d.min), max:round(d.max), passPct:round(100*passN/valid.length),
+    compPct:round(100*compN/valid.length), dfwPct:round(100*dfwN/valid.length), grades
+  };
+}
+const round = (x,p=1)=> (x==null||isNaN(x))?null:Math.round(x*10**p)/10**p;
+
+/* ==========================================================================
+   4. INTERPRETATION ENGINE  ("so what")
+   ========================================================================== */
+const Interp = {
+  spread(cv){ if(isNaN(cv)) return ''; if(cv<15) return 'Scores are tightly clustered, so most students are performing at a similar level.';
+    if(cv<25) return 'Spread is moderate. There is a middle group with a tail of students who need attention.';
+    return 'Scores are widely spread. The class is splitting into distinct performance groups, which usually means targeted intervention will help more than whole-class review.'; },
+  pass(p){ if(isNaN(p)) return ''; if(p>=85) return 'The large majority reached passing, which suggests the material and assessment were well matched to preparation.';
+    if(p>=70) return 'Most students passed, but a meaningful minority did not. This is a good point to identify who is slipping before the next exam.';
+    return 'Fewer than seven in ten passed. This assessment is an early-warning signal worth acting on this week.'; },
+  corr(r,p){ if(isNaN(r)) return 'Not enough paired data to estimate a relationship.';
+    const strength = Math.abs(r)<0.1?'no meaningful':Math.abs(r)<0.3?'a weak':Math.abs(r)<0.5?'a moderate':Math.abs(r)<0.7?'a moderately strong':'a strong';
+    const dir = r>0?'positive':'negative';
+    const sig = isNaN(p)?'':(p<0.05?' The relationship is unlikely to be due to chance alone under the test assumptions (p < .05).':' This relationship is not statistically significant at the .05 level, so treat it as suggestive rather than confirmed.');
+    return 'There is '+strength+' '+dir+' relationship (r = '+round(r,2)+'). '+(r>0?'Students who did more of this behavior tended to score higher.':'More of this behavior was associated with lower scores, which is worth investigating.')+sig; },
+  growth(md,p,d){ if(isNaN(md)) return 'Not enough matched students to measure growth yet.';
+    const dir = md>=0?'improved':'declined';
+    const mag = Math.abs(d)<0.2?'a negligible':Math.abs(d)<0.5?'a small':Math.abs(d)<0.8?'a moderate':'a large';
+    const sig = isNaN(p)?'':(p<0.05?' The change is statistically significant (p < .05).':' The change is not statistically significant at .05.');
+    return 'On average students '+dir+' by '+round(Math.abs(md),1)+' percentage points, '+mag+' effect (Cohen’s d = '+round(d,2)+').'+sig; },
+  effect(d){ if(isNaN(d)) return ''; const a=Math.abs(d);
+    return a<0.2?'negligible':a<0.5?'small':a<0.8?'moderate':'large'; }
+};
+
+/* ==========================================================================
+   5. VIEWS
+   ========================================================================== */
+const VIEWS=[
+  {id:'overview',n:'1',t:'Course Overview'},
+  {id:'performance',n:'2',t:'Performance'},
+  {id:'growth',n:'3',t:'Growth'},
+  {id:'competency',n:'4',t:'Competency'},
+  {id:'slo',n:'5',t:'SLO / Outcomes'},
+  {id:'behavior',n:'6',t:'Learning Behavior'},
+  {id:'tbl',n:'7',t:'TBL'},
+  {id:'engagement',n:'8',t:'Engagement'},
+  {id:'withdrawal',n:'9',t:'Withdrawal'},
+  {id:'longitudinal',n:'10',t:'Longitudinal'},
+  {id:'ai',n:'11',t:'AI Instructor Report'},
+  {id:'voice',n:'12',t:'Student Voice'},
+];
+let charts={}; // registry to destroy on re-render
+function destroyCharts(){ Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}}); charts={}; }
+
+function buildNav(){
+  const nav=document.getElementById('navList');
+  nav.innerHTML='';
+  VIEWS.forEach((v,i)=>{ const b=document.createElement('button'); b.className='nav-btn'+(i===0?' active':'');
+    b.dataset.view=v.id; b.innerHTML='<span class="num">'+v.n+'</span> '+v.t; nav.appendChild(b); });
+  document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
+}
+function switchView(id){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+id));
+  if(id==='longitudinal') renderLongitudinal();
+}
+
+function scaffoldViews(){
+  const host=document.getElementById('views');
+  const all=[...VIEWS.map(v=>v.id),'longitudinal-io'];
+  host.innerHTML=all.map(id=>`<section class="view${id==='overview'?' active':''}" id="view-${id}"></section>`).join('');
+}
+
+/* ---- Color helpers for Chart.js ---- */
+const C={navy:'#0B1530',rust:'#8B3A2E',gold:'#C9A14A',cream:'#F5F1E8',good:'#2E7D5B',ink:'#0B1530'};
+Chart.defaults.font.family="'Plus Jakarta Sans Variable','Plus Jakarta Sans',sans-serif";
+Chart.defaults.color='#0B1530';
+
+function statTile(label,value,foot,accent){ return `<div class="stat ${accent||''}"><p class="label">${label}</p>
+  <div class="value${String(value).length>7?' sm':''}">${value}</div>${foot?`<p class="foot">${foot}</p>`:''}</div>`; }
+function interpBox(text){ return `<div class="interp"><p class="so">So what</p><p>${text}</p></div>`; }
+function pageHead(ey,ti,intro){ return `<p class="page-eyebrow">${ey}</p><h1 class="page-title">${ti}</h1><p class="page-intro">${intro}</p>`; }
+
+/* Get percentage array for current primary assessment */
+function currentPct(){ if(!State.raw||!State.primaryCol) return null;
+  const col=State.raw.assessCols.find(c=>c.name===State.primaryCol);
+  return toPercent(State.raw.students, State.primaryCol, col?col.points:null); }
+
+/* Get all assessment columns as percent matrix {name, pct[]} in column order */
+function allPct(){ if(!State.raw) return [];
+  return State.raw.assessCols.map(c=>({name:c.name, pct:toPercent(State.raw.students,c.name,c.points)})); }
+
+function emptyView(msg){ return `<div class="empty-note">${msg}</div>`; }
+
+/* ---------- 1. OVERVIEW ---------- */
+function renderOverview(){
+  const el=document.getElementById('view-overview');
+  let head=pageHead('Course Overview','Where the class stands right now',
+    'A snapshot of enrollment, completion, and risk for the selected term and assessment. Upload after each exam to keep it current.');
+  if(!State.raw){ el.innerHTML=head+emptyView('Upload a Canvas gradebook CSV or load the demo data to populate this dashboard.'); return; }
+  const pct=currentPct(); const valid=Stat.clean(pct);
+  const enrolled=State.raw.students.length;
+  const active=valid.length;
+  const completion=round(100*active/enrolled);
+  const dfw=valid.filter(v=>v<State.passThresh).length;
+  const dfwProj=round(100*dfw/active);
+  const missing=enrolled-active;
+  el.innerHTML=head+`
+    <div class="grid g4">
+      ${statTile('Enrolled',enrolled,'Rows in gradebook','accent-navy')}
+      ${statTile('Active (submitted)',active,'Has a score on '+esc(State.primaryCol),'accent-gold')}
+      ${statTile('No submission',missing,'Watch as early-warning','accent-rust')}
+      ${statTile('Completion rate',completion+'%','Submitted this assessment','accent-navy')}
+    </div>
+    <div class="grid g4" style="margin-top:16px">
+      ${statTile('DFW projection',dfwProj+'%','Below '+State.passThresh+'% on this exam','accent-rust')}
+      ${statTile('Class mean',round(Stat.mean(valid))+'%','Selected assessment','accent-gold')}
+      ${statTile('Assessment',esc(State.primaryCol),'Term: '+esc(State.term),'accent-navy')}
+      ${statTile('Data source',State.isDemo?'Demo':'Uploaded CSV',State.isDemo?'Synthetic, anonymized':'Session only','accent-navy')}
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Assessment averages this term</h3>
+      <p class="sub">Class mean on every graded column found in this upload.</p>
+      <div class="chart-wrap"><canvas id="ovChart"></canvas></div>
+      ${interpBox(Interp.pass(round(100*(active-dfw)/active))+' '+Interp.spread(Stat.cv(valid)))}
+    </div>`;
+  const cols=allPct();
+  charts.ov=new Chart(document.getElementById('ovChart'),{type:'line',
+    data:{labels:cols.map(c=>c.name),datasets:[{label:'Class mean %',data:cols.map(c=>round(Stat.mean(Stat.clean(c.pct)))),
+      borderColor:C.rust,backgroundColor:'rgba(139,58,46,0.1)',tension:0.25,fill:true,pointBackgroundColor:C.gold,pointRadius:5}]},
+    options:chartOpts('%',0,100)});
+}
+
+/* ---------- 2. PERFORMANCE ---------- */
+function renderPerformance(){
+  const el=document.getElementById('view-performance');
+  let head=pageHead('Performance','Full descriptive picture of this assessment',
+    'Central tendency, spread, and grade distribution for the selected assessment, with a plain-language read on what the numbers mean.');
+  if(!State.raw){ el.innerHTML=head+emptyView('No data loaded yet.'); return; }
+  const pct=currentPct(); const d=Stat.describe(pct); const valid=Stat.clean(pct);
+  const passN=valid.filter(v=>v>=State.passThresh).length, compN=valid.filter(v=>v>=State.compThresh).length;
+  const grades={A:0,B:0,C:0,D:0,F:0}; valid.forEach(v=>grades[Stat.letterGrade(v)]++);
+  el.innerHTML=head+`
+    <div class="grid g4">
+      ${statTile('Mean',round(d.mean)+'%','','accent-gold')}
+      ${statTile('Median',round(d.median)+'%','','accent-navy')}
+      ${statTile('Mode',isNaN(d.mode)?'—':round(d.mode)+'%','','accent-navy')}
+      ${statTile('Std deviation',round(d.sd),'points','accent-rust')}
+    </div>
+    <div class="grid g4" style="margin-top:16px">
+      ${statTile('Variance',round(d.variance),'','accent-navy')}
+      ${statTile('Range',round(d.range),round(d.min)+' to '+round(d.max),'accent-navy')}
+      ${statTile('IQR',round(d.iqr),'Q1 '+round(d.q1)+' · Q3 '+round(d.q3),'accent-gold')}
+      ${statTile('Coeff. of variation',round(d.cv)+'%','Relative spread','accent-rust')}
+    </div>
+    <div class="grid g4" style="margin-top:16px">
+      ${statTile('95% CI',round(d.ci[0])+' – '+round(d.ci[1]),'For the mean','accent-navy')}
+      ${statTile('Passing',round(100*passN/valid.length)+'%','≥ '+State.passThresh+'%','accent-gold')}
+      ${statTile('Competent',round(100*compN/valid.length)+'%','≥ '+State.compThresh+'%','accent-gold')}
+      ${statTile('n',valid.length,'Scored students','accent-navy')}
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>Score distribution</h3><p class="sub">Histogram, 10-point bins.</p>
+        <div class="chart-wrap"><canvas id="perfHist"></canvas></div></div>
+      <div class="card"><h3>Letter grade distribution</h3><p class="sub">Standard 10-point scale.</p>
+        <div class="chart-wrap"><canvas id="perfGrades"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Box &amp; whisker</h3><p class="sub">Five-number summary with outliers flagged beyond 1.5×IQR.</p>
+      ${boxPlotSVG(valid)}</div>
+    <div class="card" style="margin-top:16px">${interpBox(Interp.spread(d.cv)+' '+Interp.pass(round(100*passN/valid.length)))}</div>`;
+  const h=Stat.histogram(valid);
+  charts.hist=new Chart(document.getElementById('perfHist'),{type:'bar',
+    data:{labels:h.labels,datasets:[{label:'Students',data:h.bins,backgroundColor:C.navy}]},
+    options:chartOpts('Students')});
+  charts.grades=new Chart(document.getElementById('perfGrades'),{type:'bar',
+    data:{labels:['A','B','C','D','F'],datasets:[{label:'Students',data:['A','B','C','D','F'].map(g=>grades[g]),
+      backgroundColor:[C.good,C.gold,'#B98A3E',C.rust,'#5a2018']}]},options:chartOpts('Students')});
+}
+
+/* ---------- 3. GROWTH ---------- */
+function renderGrowth(){
+  const el=document.getElementById('view-growth');
+  let head=pageHead('Growth','Are the same students getting better?',
+    'Paired comparisons between assessment columns. Pick any two columns to measure improvement, effect size, and how many students moved.');
+  if(!State.raw||State.raw.assessCols.length<2){ el.innerHTML=head+emptyView('Growth needs at least two assessment columns in the upload.'); return; }
+  const cols=State.raw.assessCols;
+  const opts=cols.map((c,i)=>`<option value="${i}">${esc(c.name)}</option>`).join('');
+  el.innerHTML=head+`
+    <div class="controls"><div class="controls-row">
+      <div class="field"><label for="gFrom">From</label><select id="gFrom">${opts}</select></div>
+      <div class="field"><label for="gTo">To</label><select id="gTo">${opts}</select></div>
+    </div></div>
+    <div id="growthBody"></div>`;
+  const from=document.getElementById('gFrom'), to=document.getElementById('gTo');
+  from.value='0'; to.value=String(cols.length-1);
+  const upd=()=>renderGrowthBody(parseInt(from.value),parseInt(to.value));
+  from.addEventListener('change',upd); to.addEventListener('change',upd); upd();
+}
+function renderGrowthBody(fi,ti){
+  const cols=State.raw.assessCols;
+  const a=toPercent(State.raw.students,cols[fi].name,cols[fi].points);
+  const b=toPercent(State.raw.students,cols[ti].name,cols[ti].points);
+  const diffs=[]; for(let i=0;i<a.length;i++){ if(a[i]!=null&&b[i]!=null&&!isNaN(a[i])&&!isNaN(b[i])) diffs.push(b[i]-a[i]); }
+  const pt=Stat.pairedT(a,b);
+  const thresh=[5,10,20,30,40,50]; const impBy=thresh.map(t=>diffs.filter(d=>d>=t).length);
+  const declining=diffs.filter(d=>d<0).length, noChange=diffs.filter(d=>d===0).length, improving=diffs.filter(d=>d>0).length;
+  const body=document.getElementById('growthBody');
+  body.innerHTML=`
+    <div class="grid g4">
+      ${statTile('Avg improvement',round(pt.meanDiff)+' pts','','accent-gold')}
+      ${statTile('Median improvement',round(Stat.median(diffs))+' pts','','accent-navy')}
+      ${statTile('Largest gain',diffs.length?'+'+round(Stat.max(diffs)):'—','points','accent-gold')}
+      ${statTile('Effect size (d)',round(pt.d,2),Interp.effect(pt.d),'accent-rust')}
+    </div>
+    <div class="grid g4" style="margin-top:16px">
+      ${statTile('Improving',improving,round(100*improving/diffs.length)+'% of matched','accent-gold')}
+      ${statTile('Declining',declining,round(100*declining/diffs.length)+'%','accent-rust')}
+      ${statTile('No change',noChange,'','accent-navy')}
+      ${statTile('Paired t p-value',isNaN(pt.p)?'—':round(pt.p,3),pt.p<0.05?'Significant':'Not sig. at .05','accent-navy')}
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>Students improving by at least…</h3><p class="sub">${esc(cols[fi].name)} → ${esc(cols[ti].name)}</p>
+        <div class="chart-wrap"><canvas id="growBar"></canvas></div></div>
+      <div class="card"><h3>Improvement distribution</h3><p class="sub">Change per student (percentage points).</p>
+        <div class="chart-wrap"><canvas id="growHist"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-top:16px">${interpBox(Interp.growth(pt.meanDiff,pt.p,pt.d))}</div>`;
+  charts.growBar=new Chart(document.getElementById('growBar'),{type:'bar',
+    data:{labels:thresh.map(t=>'≥'+t+' pts'),datasets:[{label:'Students',data:impBy,backgroundColor:C.gold}]},
+    options:chartOpts('Students')});
+  const gh=Stat.histogram(diffs,10,-30,60);
+  charts.growHist=new Chart(document.getElementById('growHist'),{type:'bar',
+    data:{labels:gh.labels,datasets:[{label:'Students',data:gh.bins,backgroundColor:C.navy}]},options:chartOpts('Students')});
+}
+
+/* ---------- 4. COMPETENCY ---------- */
+function renderCompetency(){
+  const el=document.getElementById('view-competency');
+  let head=pageHead('Competency','Mastery, not averages',
+    'For each assessment: the share of students who are competent (≥ '+State.compThresh+'%), nearly competent (within 10 points), or below competency. This shows how fast the class reaches mastery.');
+  if(!State.raw){ el.innerHTML=head+emptyView('No data loaded yet.'); return; }
+  const cols=allPct();
+  const rows=cols.map(c=>{ const v=Stat.clean(c.pct); const comp=v.filter(x=>x>=State.compThresh).length;
+    const near=v.filter(x=>x<State.compThresh&&x>=State.compThresh-10).length; const below=v.length-comp-near;
+    return {name:c.name,n:v.length,comp,near,below}; });
+  el.innerHTML=head+`
+    <div class="card"><h3>Competency by assessment</h3><p class="sub">Stacked: competent / nearly competent / below.</p>
+      <div class="chart-wrap tall"><canvas id="compChart"></canvas></div></div>
+    <div class="card" style="margin-top:16px"><h3>Detail</h3>
+      <table class="tbl"><thead><tr><th>Assessment</th><th>n</th><th>Competent</th><th>Nearly</th><th>Below</th><th>% Competent</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="num">${r.n}</td>
+        <td class="num">${r.comp}</td><td class="num">${r.near}</td><td class="num">${r.below}</td>
+        <td class="num">${round(100*r.comp/r.n)}%</td></tr>`).join('')}</tbody></table>
+      ${interpBox(competencyInterp(rows))}</div>`;
+  charts.comp=new Chart(document.getElementById('compChart'),{type:'bar',
+    data:{labels:rows.map(r=>r.name),datasets:[
+      {label:'Competent',data:rows.map(r=>r.comp),backgroundColor:C.good,stack:'s'},
+      {label:'Nearly competent',data:rows.map(r=>r.near),backgroundColor:C.gold,stack:'s'},
+      {label:'Below competency',data:rows.map(r=>r.below),backgroundColor:C.rust,stack:'s'}]},
+    options:{...chartOpts('Students'),scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}}}});
+}
+function competencyInterp(rows){ if(rows.length<2) return 'Upload more assessments to see how quickly students reach mastery.';
+  const first=round(100*rows[0].comp/rows[0].n), last=round(100*rows[rows.length-1].comp/rows[rows.length-1].n);
+  const diff=last-first;
+  if(diff>15) return 'Competency climbed from '+first+'% to '+last+'% across the term. Students are reaching mastery progressively, which is the pattern you want to see in a scaffolded course.';
+  if(diff>0) return 'Competency edged up from '+first+'% to '+last+'%. Growth is real but gradual; the later units may need more retrieval practice.';
+  return 'Competency did not rise across assessments ('+first+'% to '+last+'%). This flags a unit where mastery is stalling and is worth a design review.'; }
+
+/* ---------- 5. SLO / OUTCOMES ---------- */
+const SLO_KEY='ted_slo_maps_v1';
+function loadSLOMaps(){ try{ return JSON.parse(localStorage.getItem(SLO_KEY))||{}; }catch(e){ return {}; } }
+function saveSLOMaps(m){ try{ localStorage.setItem(SLO_KEY, JSON.stringify(m)); }catch(e){ alert('Could not save SLO map: '+e.message); } }
+function currentSLOMap(){ const all=loadSLOMaps(); return all[State.course||'(unlabeled)']||{}; }
+function persistSLOMap(map){ const all=loadSLOMaps(); all[State.course||'(unlabeled)']=map; saveSLOMaps(all); }
+
+function renderSLO(){
+  const el=document.getElementById('view-slo');
+  let head=pageHead('SLO / Outcomes','Map assessments to outcomes, then run an end-of-course SLO assessment',
+    'Assign each assessment column to a Student Learning Outcome (type them, or upload your SLO list). A student meets an outcome if their average across that outcome’s assessments is at or above the mastery threshold. The result is an accreditation-ready table you can download.');
+  if(!State.raw){ el.innerHTML=head+emptyView('Load a course first. Then map its assessments to outcomes here.'); return; }
+  const map=currentSLOMap();
+  const thresh=map.__thresh||75;
+  const cols=State.raw.assessCols;
+  el.innerHTML=head+`
+    <div class="controls"><div class="controls-row">
+      <div class="field"><label for="sloThresh">Mastery threshold %</label>
+        <input type="number" id="sloThresh" value="${thresh}" min="0" max="100" step="1" style="min-width:90px"></div>
+      <label class="btn btn-primary" for="sloUpload" role="button" tabindex="0"
+        onkeydown="if(event.key==='Enter'||event.key===' '){document.getElementById('sloUpload').click();event.preventDefault();}">Upload SLO list</label>
+      <input type="file" id="sloUpload" accept=".csv,.json,text/csv,application/json" aria-label="Upload SLO mapping">
+      <button class="btn btn-ghost" id="sloSuggest">Auto-suggest from names</button>
+      <button class="btn btn-gold" id="sloSave">Save mapping for ${esc(State.course||'this course')}</button>
+      <button class="btn btn-ghost" id="sloDownMap">Download mapping</button>
+    </div>
+    <p class="file-hint">SLO list format: a CSV or JSON. CSV = two columns per row: assessment column name, outcome name. JSON = {"Exam 1":"Musculoskeletal","Practical 1":"Musculoskeletal"}. The mapping is saved per course and reused every semester.</p>
+    </div>
+    <div class="card"><h3>Map assessments to outcomes</h3><p class="sub">Give columns that measure the same outcome the same label. Leave blank to exclude a column.</p>
+      <table class="tbl"><thead><tr><th>Assessment column</th><th>Outcome / SLO</th></tr></thead>
+      <tbody>${cols.map(c=>`<tr><td>${esc(c.name)}</td>
+        <td><input type="text" class="slo-in" data-col="${esc(c.name)}" list="sloNames" value="${esc(map[c.name]||'')}" placeholder="e.g. Musculoskeletal" style="width:100%;font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:5px"></td></tr>`).join('')}</tbody></table>
+      <datalist id="sloNames">${[...new Set(Object.values(map).filter(v=>v&&v!=='__thresh'))].map(v=>`<option value="${esc(v)}"></option>`).join('')}</datalist>
+    </div>
+    <div id="sloResults"></div>`;
+  const recompute=()=>{ const m={__thresh:parseFloat(document.getElementById('sloThresh').value)||75};
+    document.querySelectorAll('.slo-in').forEach(inp=>{ const v=inp.value.trim(); if(v) m[inp.dataset.col]=v; });
+    renderSLOResults(m); };
+  document.getElementById('sloThresh').addEventListener('change',recompute);
+  document.querySelectorAll('.slo-in').forEach(inp=>inp.addEventListener('change',recompute));
+  document.getElementById('sloSuggest').addEventListener('click',()=>{ let filled=0;
+    document.querySelectorAll('.slo-in').forEach(inp=>{ if(inp.value.trim()) return; // never overwrite manual entries
+      const guess=guessOutcome(inp.dataset.col); if(guess){ inp.value=guess; filled++; } });
+    recompute();
+    alert(filled?('Suggested '+filled+' outcome'+(filled>1?'s':'')+' from your assessment names. Review and edit any, then Save.')
+      :'No topic keywords detected in the assessment names. Type outcomes manually, or rename columns to include the topic (e.g. "Practical 1 - Musculoskeletal").'); });
+  document.getElementById('sloSave').addEventListener('click',()=>{ const m={__thresh:parseFloat(document.getElementById('sloThresh').value)||75};
+    document.querySelectorAll('.slo-in').forEach(inp=>{ const v=inp.value.trim(); if(v) m[inp.dataset.col]=v; });
+    persistSLOMap(m); alert('SLO mapping saved for '+(State.course||'this course')+'. It will load automatically next time.'); });
+  document.getElementById('sloDownMap').addEventListener('click',()=>{ const m={__thresh:parseFloat(document.getElementById('sloThresh').value)||75};
+    document.querySelectorAll('.slo-in').forEach(inp=>{ const v=inp.value.trim(); if(v) m[inp.dataset.col]=v; });
+    const blob=new Blob([JSON.stringify(m,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='slo-mapping-'+(State.course||'course').replace(/\s+/g,'_')+'.json'; a.click(); });
+  document.getElementById('sloUpload').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader(); r.onload=()=>{ try{ let m={};
+      if(/\.json$/i.test(f.name)||r.result.trim().startsWith('{')){ m=JSON.parse(r.result); }
+      else { const rows=parseCSV(r.result); rows.forEach(row=>{ if(row.length>=2){ const col=row[0].trim(), out=row[1].trim();
+        if(col&&out&&!/assessment|column/i.test(col)) m[col]=out; } }); }
+      // apply to inputs, matching column names loosely
+      document.querySelectorAll('.slo-in').forEach(inp=>{ const key=Object.keys(m).find(k=>k.toLowerCase()===inp.dataset.col.toLowerCase());
+        if(key) inp.value=m[key]; });
+      if(m.__thresh) document.getElementById('sloThresh').value=m.__thresh;
+      recompute(); alert('SLO list applied. Review the mapping, then Save.');
+    }catch(err){ alert('Could not read SLO file: '+err.message); } };
+    r.readAsText(f); document.getElementById('sloUpload').value=''; });
+  recompute();
+}
+// Smart topic detection from assessment column names (anatomy & physiology).
+// Order matters: more specific patterns first.
+const SLO_KEYWORDS=[
+  [/muscul|muscle|myo/i,'Musculoskeletal'],
+  [/skelet|bone|osteo|joint|articul/i,'Skeletal'],
+  [/nervous|neuro|neuron|brain|spinal|cns|pns|reflex|synap/i,'Nervous System'],
+  [/endocrin|hormone|gland/i,'Endocrine'],
+  [/cardiovascul|cardiac|heart|vascular|vessel/i,'Cardiovascular'],
+  [/\bblood\b|hemato|hemo/i,'Blood'],
+  [/respir|pulmon|lung|breath|gas exchange/i,'Respiratory'],
+  [/digest|gastro|\bgi\b|aliment/i,'Digestive'],
+  [/renal|kidney|urinary|nephro/i,'Renal / Urinary'],
+  [/reproduc|repro\b/i,'Reproductive'],
+  [/immun|lymph/i,'Immune / Lymphatic'],
+  [/integument|skin|epiderm/i,'Integumentary'],
+  [/tissue|histo|epitheli|connective/i,'Tissues'],
+  [/cell|membrane|organelle|transport/i,'Cell & Transport'],
+  [/fluid|electrolyte|acid.?base/i,'Fluid & Electrolyte'],
+  [/foundation|terminolog|orient|homeostas|organizat/i,'Foundations'],
+];
+function guessOutcome(name){
+  for(const [re,out] of SLO_KEYWORDS){ if(re.test(name)) return out; }
+  // fall back: if the name has a clear topic phrase after a dash/colon, use it
+  const m=name.match(/[-:–]\s*([A-Za-z][A-Za-z /&]{2,})$/); if(m) return m[1].trim();
+  return null;
+}
+function renderSLOResults(map){
+  const thresh=map.__thresh||75;
+  const outcomes=[...new Set(Object.entries(map).filter(([k])=>k!=='__thresh').map(([,v])=>v))];
+  const host=document.getElementById('sloResults');
+  if(!outcomes.length){ host.innerHTML=emptyView('Assign at least one outcome above to run the SLO assessment.'); return; }
+  const students=State.raw.students;
+  const results=outcomes.map(o=>{
+    const oCols=Object.entries(map).filter(([k,v])=>k!=='__thresh'&&v===o).map(([k])=>k);
+    const studentAvgs=[];
+    students.forEach(s=>{ const vals=[]; oCols.forEach(cn=>{ const c=State.raw.assessCols.find(x=>x.name===cn);
+      const pct=c?toPercent([s],cn,c.points)[0]:null; if(pct!=null&&!isNaN(pct)) vals.push(pct); });
+      if(vals.length) studentAvgs.push(Stat.mean(vals)); });
+    const n=studentAvgs.length; const meet=studentAvgs.filter(v=>v>=thresh).length;
+    const near=studentAvgs.filter(v=>v<thresh&&v>=thresh-10).length; const below=n-meet-near;
+    return {outcome:o, cols:oCols, n, meanPct:round(Stat.mean(studentAvgs)), meetPct:round(100*meet/n), meet, near, below};
+  });
+  host.innerHTML=`
+    <div class="card"><h3>SLO assessment (mastery ≥ ${thresh}%)</h3>
+      <p class="sub">${esc(State.course||'Course')} · ${esc(State.term)} · ${State.raw.students.length} students on roster.</p>
+      <div class="chart-wrap tall"><canvas id="sloChart"></canvas></div></div>
+    <div class="card" style="margin-top:16px"><h3>Outcome detail</h3>
+      <table class="tbl"><thead><tr><th>Outcome (SLO)</th><th>Assessments</th><th>n assessed</th><th>Mean</th><th>% Meeting</th><th>Meets</th><th>Near</th><th>Below</th></tr></thead>
+      <tbody>${results.map(r=>`<tr><td><strong>${esc(r.outcome)}</strong></td><td>${r.cols.map(esc).join(', ')}</td>
+        <td class="num">${r.n}</td><td class="num">${r.meanPct}%</td>
+        <td class="num"><span class="badge ${r.meetPct>=70?'b-comp':r.meetPct>=50?'b-near':'b-below'}">${r.meetPct}%</span></td>
+        <td class="num">${r.meet}</td><td class="num">${r.near}</td><td class="num">${r.below}</td></tr>`).join('')}</tbody></table>
+      <div style="margin-top:12px"><button class="btn btn-gold" id="sloReport">Download SLO report (CSV)</button></div>
+      ${interpBox(sloInterp(results,thresh))}</div>`;
+  charts.slo=new Chart(document.getElementById('sloChart'),{type:'bar',
+    data:{labels:results.map(r=>r.outcome),datasets:[{label:'% meeting mastery',data:results.map(r=>r.meetPct),
+      backgroundColor:results.map(r=>r.meetPct>=70?C.good:r.meetPct>=50?C.gold:C.rust)}]},
+    options:{...chartOpts('% of students',0,100)}});
+  document.getElementById('sloReport').addEventListener('click',()=>{
+    const rows=[['Course','Term','Outcome','Assessments','n_assessed','Mean_pct','Pct_meeting','Threshold','Meets','Near','Below']];
+    results.forEach(r=>rows.push([State.course||'',State.term,r.outcome,r.cols.join('; '),r.n,r.meanPct,r.meetPct,thresh,r.meet,r.near,r.below]));
+    const csv=rows.map(row=>row.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='SLO-report-'+(State.course||'course').replace(/\s+/g,'_')+'-'+State.term.replace(/\s+/g,'_')+'.csv'; a.click(); });
+}
+function sloInterp(results,thresh){ if(!results.length) return '';
+  const sorted=[...results].sort((a,b)=>b.meetPct-a.meetPct); const best=sorted[0], worst=sorted[sorted.length-1];
+  const weak=results.filter(r=>r.meetPct<70);
+  let txt='Across the mapped outcomes, "'+best.outcome+'" is strongest ('+best.meetPct+'% of students meeting mastery) and "'+worst.outcome+'" is weakest ('+worst.meetPct+'%). ';
+  if(weak.length) txt+=weak.length+' outcome'+(weak.length>1?'s fall':' falls')+' below 70% mastery and would be the priority for redesign or added retrieval practice. ';
+  else txt+='All mapped outcomes are at or above 70% mastery, which is a defensible result for an end-of-course SLO report. ';
+  txt+='Save this after the final so it becomes part of your longitudinal record and can be compared across semesters.';
+  return txt; }
+
+/* ---------- 6. LEARNING BEHAVIOR ---------- */
+function renderBehavior(){
+  const el=document.getElementById('view-behavior');
+  let head=pageHead('Learning Behavior','What behaviors predict scores?',
+    'Correlate any engagement behavior column (videos, spaced recall, attendance, quizzes) against any outcome column. Includes Pearson r, R², p-value, regression line, and interpretation.');
+  if(!State.raw||State.raw.assessCols.length<2){ el.innerHTML=head+emptyView('Need at least two numeric columns to correlate. Include behavior columns (e.g., video %, spaced recall %) in your export.'); return; }
+  const cols=State.raw.assessCols;
+  const opts=cols.map((c,i)=>`<option value="${i}">${esc(c.name)}</option>`).join('');
+  el.innerHTML=head+`
+    <div class="controls"><div class="controls-row">
+      <div class="field"><label for="bX">Behavior (X)</label><select id="bX">${opts}</select></div>
+      <div class="field"><label for="bY">Outcome (Y)</label><select id="bY">${opts}</select></div>
+    </div></div><div id="behaviorBody"></div>`;
+  const x=document.getElementById('bX'), y=document.getElementById('bY');
+  x.value='0'; y.value=String(cols.length-1);
+  const upd=()=>renderBehaviorBody(parseInt(x.value),parseInt(y.value));
+  x.addEventListener('change',upd); y.addEventListener('change',upd); upd();
+}
+function renderBehaviorBody(xi,yi){
+  const cols=State.raw.assessCols;
+  const xa=toPercent(State.raw.students,cols[xi].name,cols[xi].points);
+  const ya=toPercent(State.raw.students,cols[yi].name,cols[yi].points);
+  const pts=[]; for(let i=0;i<xa.length;i++){ if(xa[i]!=null&&ya[i]!=null&&!isNaN(xa[i])&&!isNaN(ya[i])) pts.push({x:xa[i],y:ya[i]}); }
+  const reg=Stat.pearson(pts.map(p=>p.x),pts.map(p=>p.y));
+  const xs=pts.map(p=>p.x); const lo=Stat.min(xs),hi=Stat.max(xs);
+  const line=[{x:lo,y:reg.intercept+reg.slope*lo},{x:hi,y:reg.intercept+reg.slope*hi}];
+  document.getElementById('behaviorBody').innerHTML=`
+    <div class="grid g4">
+      ${statTile('Pearson r',round(reg.r,2),'','accent-gold')}
+      ${statTile('R²',round(reg.r2,2),Math.round(reg.r2*100)+'% of variance','accent-navy')}
+      ${statTile('p-value',isNaN(reg.p)?'—':round(reg.p,3),reg.p<0.05?'Significant':'Not sig. at .05','accent-rust')}
+      ${statTile('n pairs',reg.n,'','accent-navy')}
+    </div>
+    <div class="card" style="margin-top:16px"><h3>${esc(cols[xi].name)} vs ${esc(cols[yi].name)}</h3>
+      <p class="sub">Scatter with least-squares regression line.</p>
+      <div class="chart-wrap tall"><canvas id="behScatter"></canvas></div>
+      ${interpBox(Interp.corr(reg.r,reg.p))}</div>`;
+  charts.beh=new Chart(document.getElementById('behScatter'),{type:'scatter',
+    data:{datasets:[
+      {label:'Students',data:pts,backgroundColor:'rgba(11,21,48,0.55)',pointRadius:5},
+      {label:'Regression',type:'line',data:line,borderColor:C.rust,borderWidth:2,pointRadius:0,fill:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{x:{title:{display:true,text:cols[xi].name},beginAtZero:true},
+              y:{title:{display:true,text:cols[yi].name},beginAtZero:true}},
+      plugins:{legend:{display:true,position:'bottom'}}}});
+}
+
+/* ---------- 6. TBL ---------- */
+function renderTBL(){
+  const el=document.getElementById('view-tbl');
+  let head=pageHead('Team-Based Learning','Does TBL predict success?',
+    'Detects IRAT, TRAT, and application columns by name and correlates them with lecture/practical outcomes. If your export has no TBL columns, this stays empty (BIO 304 online has no TBL).');
+  if(!State.raw){ el.innerHTML=head+emptyView('No data loaded yet.'); return; }
+  const cols=State.raw.assessCols;
+  const find=re=>cols.filter(c=>re.test(c.name));
+  const irat=find(/irat/i), trat=find(/trat/i), app=find(/applic|4s|team app/i);
+  const outcome=cols.find(c=>/final|practical|exam/i.test(c.name))||cols[cols.length-1];
+  if(!irat.length&&!trat.length&&!app.length){ el.innerHTML=head+emptyView('No TBL columns (IRAT / TRAT / application) found in this upload. This dashboard populates automatically when they are present.'); return; }
+  function meanCol(c){ return round(Stat.mean(Stat.clean(toPercent(State.raw.students,c.name,c.points)))); }
+  const rows=[]; [['IRAT',irat],['TRAT',trat],['Application',app]].forEach(([lab,arr])=>{
+    arr.forEach(c=>{ const xa=toPercent(State.raw.students,c.name,c.points);
+      const ya=toPercent(State.raw.students,outcome.name,outcome.points);
+      const r=Stat.pearson(Stat.clean2(xa,ya).x,Stat.clean2(xa,ya).y);
+      rows.push({type:lab,name:c.name,mean:meanCol(c),r:round(r.r,2),p:round(r.p,3)}); }); });
+  el.innerHTML=head+`
+    <div class="grid g3">
+      ${statTile('IRAT avg',irat.length?meanCol(irat[0])+'%':'—','Individual readiness','accent-navy')}
+      ${statTile('TRAT avg',trat.length?meanCol(trat[0])+'%':'—','Team readiness','accent-gold')}
+      ${statTile('Application avg',app.length?meanCol(app[0])+'%':'—','4S activities','accent-rust')}
+    </div>
+    <div class="card" style="margin-top:16px"><h3>TBL correlation with ${esc(outcome.name)}</h3>
+      <table class="tbl"><thead><tr><th>Type</th><th>Column</th><th>Mean</th><th>r with outcome</th><th>p</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td>${r.type}</td><td>${esc(r.name)}</td><td class="num">${r.mean}%</td>
+        <td class="num">${r.r}</td><td class="num">${r.p}</td></tr>`).join('')}</tbody></table>
+      ${interpBox(tblInterp(rows))}</div>`;
+}
+function tblInterp(rows){ if(!rows.length) return 'No TBL data available.';
+  const best=rows.reduce((a,b)=>Math.abs(b.r)>Math.abs(a.r)?b:a);
+  return 'Of the TBL measures, '+best.type+' shows the strongest relationship with the outcome (r = '+best.r+'). '+
+    (best.r>=0.5?'This suggests collaborative readiness is transferring to independent performance.':'The link is modest; TBL may support learning through mechanisms other than raw score prediction.'); }
+
+/* ---------- 7. ENGAGEMENT ---------- */
+function renderEngagement(){
+  const el=document.getElementById('view-engagement');
+  let head=pageHead('Engagement','When do students stop engaging?',
+    'Weekly engagement built from submission rates across assessment columns (a proxy when attendance and video data are not in the export). The heatmap flags where participation drops so you can intervene early.');
+  if(!State.raw){ el.innerHTML=head+emptyView('No data loaded yet.'); return; }
+  const cols=allPct();
+  // submission rate per column as engagement proxy
+  const subRate=cols.map(c=>{ const submitted=c.pct.filter(v=>v!=null&&!isNaN(v)).length;
+    return round(100*submitted/State.raw.students.length); });
+  // find first decline
+  let dropIdx=-1; for(let i=1;i<subRate.length;i++){ if(subRate[i]<subRate[i-1]-5){dropIdx=i;break;} }
+  el.innerHTML=head+`
+    <div class="grid g3">
+      ${statTile('Avg submission rate',round(Stat.mean(subRate))+'%','Across assessments','accent-gold')}
+      ${statTile('Lowest point',Stat.min(subRate)+'%',esc(cols[subRate.indexOf(Stat.min(subRate))].name),'accent-rust')}
+      ${statTile('First notable drop',dropIdx<0?'None':esc(cols[dropIdx].name),dropIdx<0?'Engagement holding':'>5 pt fall','accent-rust')}
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Engagement trend</h3><p class="sub">Submission rate per assessment as an engagement proxy.</p>
+      <div class="chart-wrap"><canvas id="engLine"></canvas></div></div>
+    <div class="card" style="margin-top:16px"><h3>Participation heatmap</h3><p class="sub">Darker rust = lower submission. Scan left to right for the week engagement starts to fade.</p>
+      ${engHeat(cols,subRate)}</div>
+    <div class="card" style="margin-top:16px">${interpBox(dropIdx<0?
+      'Submission rates are holding steady across assessments, which is a healthy sign that the weekly rhythm is sustainable.':
+      'Submission rate first falls noticeably at '+esc(cols[dropIdx].name)+'. In this course that is your early-warning point: reach out to non-submitters that week, before the next exam compounds the gap.')}</div>`;
+  charts.eng=new Chart(document.getElementById('engLine'),{type:'line',
+    data:{labels:cols.map(c=>c.name),datasets:[{label:'Submission %',data:subRate,borderColor:C.navy,
+      backgroundColor:'rgba(11,21,48,0.08)',tension:0.25,fill:true,pointBackgroundColor:C.gold,pointRadius:5}]},
+    options:chartOpts('%',0,100)});
+}
+function engHeat(cols,rate){ let cells='';
+  cols.forEach((c,i)=>{ const r=rate[i]; const alpha=1-(r/100)*0.85;
+    cells+=`<div class="heat-cell" style="background:rgba(139,58,46,${round(alpha,2)})" title="${esc(c.name)}: ${r}%">${r}</div>`; });
+  const labs=cols.map(c=>`<div class="heat-lab" style="justify-content:center;font-size:9px">${esc(c.name.slice(0,10))}</div>`).join('');
+  return `<div class="heat" style="grid-template-columns:repeat(${cols.length},1fr)">${cells}</div>
+    <div class="heat" style="grid-template-columns:repeat(${cols.length},1fr);margin-top:4px">${labs}</div>`; }
+
+/* ---------- 8. WITHDRAWAL ---------- */
+function renderWithdrawal(){
+  const el=document.getElementById('view-withdrawal');
+  let head=pageHead('Withdrawal','Retention and when students leave',
+    'Students with no submissions on later assessments are treated as likely withdrawals (a proxy when no official withdrawal list is uploaded). Cumulative pattern shows when attrition clusters.');
+  if(!State.raw){ el.innerHTML=head+emptyView('No data loaded yet.'); return; }
+  const cols=allPct(); const n=State.raw.students.length;
+  // cumulative "stopped submitting": count students whose last submission was before column i
+  const lastSub=State.raw.students.map(s=>{ let last=-1; cols.forEach((c,i)=>{ const v=c.pct[State.raw.students.indexOf(s)]; }); return last; });
+  // simpler: per column, count students inactive from here on
+  const inactiveByCol=cols.map((c,i)=>{ let count=0;
+    State.raw.students.forEach((s,si)=>{ let activeLater=false; for(let j=i;j<cols.length;j++){ const v=cols[j].pct[si]; if(v!=null&&!isNaN(v)){activeLater=true;break;} } if(!activeLater) count++; });
+    return count; });
+  const totalWd=inactiveByCol[inactiveByCol.length-1]||0;
+  const retention=round(100*(n-totalWd)/n);
+  el.innerHTML=head+`
+    <div class="grid g3">
+      ${statTile('Enrolled',n,'','accent-navy')}
+      ${statTile('Likely withdrawn',totalWd,'No later submissions','accent-rust')}
+      ${statTile('Retention',retention+'%','Still active at last exam','accent-gold')}
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Cumulative attrition</h3><p class="sub">Students with no submissions from each point onward.</p>
+      <div class="chart-wrap"><canvas id="wdLine"></canvas></div>
+      ${interpBox(withdrawInterp(inactiveByCol,cols))}</div>`;
+  charts.wd=new Chart(document.getElementById('wdLine'),{type:'line',
+    data:{labels:cols.map(c=>c.name),datasets:[{label:'Cumulative inactive',data:inactiveByCol,borderColor:C.rust,
+      backgroundColor:'rgba(139,58,46,0.1)',tension:0.2,fill:true,pointBackgroundColor:C.navy,pointRadius:5}]},
+    options:chartOpts('Students')});
+}
+function withdrawInterp(arr,cols){ let maxJump=0,idx=-1; for(let i=1;i<arr.length;i++){ if(arr[i]-arr[i-1]>maxJump){maxJump=arr[i]-arr[i-1];idx=i;} }
+  if(maxJump<=0) return 'No attrition detected in submission patterns. Retention is holding.';
+  return 'The largest jump in inactive students occurs at '+esc(cols[idx].name)+' (+'+maxJump+'). If withdrawals cluster right after a specific exam, that assessment is a key intervention point worth a proactive outreach.'; }
+
+/* ---------- 12. STUDENT VOICE (satisfaction + self-perceived growth) ---------- */
+const SURVEY_KEY='ted_survey_v1';
+const Voice={items:[], n:0};
+const VOICE_SCALE='1 = Strongly disagree, 2 = Disagree, 3 = Neutral, 4 = Agree, 5 = Strongly agree';
+const STAGE_ORDER={'Beginning':0,'Midterm':1,'End of semester':2,'Final':3,'Other':4,'(unstaged)':5};
+function stageOrder(s){ return STAGE_ORDER[s]!=null?STAGE_ORDER[s]:5; }
+const VOICE_INSTRUMENTS={
+  'Beginning':{ Expectations:[
+    'I understand how this course is structured and what will be expected of me.',
+    'The weekly format (pre-work, lab day, and quiz) seems like it will work for me.',
+    'I feel prepared to keep up with the pace of this course.',
+    'I know where to find help if I start to fall behind.'],
+   Confidence:[
+    'I am confident I can succeed in this course.',
+    'I expect to manage the workload alongside my other commitments.',
+    'I am motivated to put in the time this course will require.']},
+  'Midterm':{ Satisfaction:[
+    'So far, the course is well organized.',
+    'The pace has been manageable for me.',
+    'The feedback I have received has been helpful.',
+    'I feel supported by the instructor.'],
+   Experience:[
+    'The format is working the way I expected it to.',
+    'I am keeping up with the weekly rhythm.',
+    'I know what I need to do to improve my grade.']},
+  'End of semester':{ Satisfaction:[
+    'The course was well organized.',
+    'Expectations and grading were clear.',
+    'The feedback I received helped me improve.',
+    'I felt supported by the instructor.',
+    'The workload was manageable for the credit hours.',
+    'I would recommend this course to another student.'],
+   Growth:[
+    'I understand the material more deeply than I did at the start.',
+    'I am more confident applying anatomy and physiology concepts.',
+    'My study skills improved during this course.',
+    'I can connect course concepts to clinical or real-world situations.',
+    'I feel better prepared for the next course.',
+    'My ability to learn independently grew this term.']}
+};
+function currentInstrument(){ return VOICE_INSTRUMENTS[State.stage]||VOICE_INSTRUMENTS['End of semester']; }
+function parseLikert(v){ v=String(v).trim().toLowerCase(); if(v==='') return null;
+  const n=parseFloat(v); if(!isNaN(n)&&n>=1&&n<=5) return n;
+  if(/strong.*disagree/.test(v)) return 1; if(/disagree/.test(v)) return 2;
+  if(/neither|neutral/.test(v)) return 3;
+  if(/strong.*agree/.test(v)) return 5; if(/\bagree/.test(v)) return 4;
+  if(/very dissatisf/.test(v)) return 1; if(/dissatisf/.test(v)) return 2;
+  if(/very satisf/.test(v)) return 5; if(/satisf/.test(v)) return 4;
+  return null; }
+function voiceGroup(q){ q=String(q);
+  // Expectations/Confidence (beginning-of-term) checked first so "confident I can succeed" isn't read as growth
+  if(/expect|will work|going to work|seems like|know how (this|the)|find help|keep up|manage the workload|motivat|confident i (can|will)|prepared to keep|structur|succeed/i.test(q)) return 'Expectations';
+  if(/grow|improved|deeper|independent|apply|connect|learned|more confident|better prepared|study skills/i.test(q)) return 'Growth';
+  if(/organ|clear|feedback|support|recommend|satisf|enjoy|quality|instructor|fair|communicat|respond|manageable|\bpace\b|rhythm|improve my grade/i.test(q)) return 'Satisfaction';
+  return 'Other'; }
+function parseSurvey(rows){
+  if(rows.length<2) return null;
+  const header=rows[0].map(h=>h.trim());
+  const skip=/timestamp|^name$|email|student id|^id$|section|^date$|score|username/i;
+  const items=[];
+  header.forEach((h,i)=>{ if(!h||skip.test(h)) return;
+    const vals=[]; for(let r=1;r<rows.length;r++){ const p=parseLikert(rows[r][i]); if(p!=null) vals.push(p); }
+    if(vals.length && vals.length>=Math.max(1,(rows.length-1)*0.4)){
+      items.push({q:h, mean:round(Stat.mean(vals),2), fav:round(100*vals.filter(v=>v>=4).length/vals.length),
+        n:vals.length, group:voiceGroup(h)}); }
+  });
+  return {items, n:rows.length-1};
+}
+function loadSurveys(){ try{ return JSON.parse(localStorage.getItem(SURVEY_KEY))||[]; }catch(e){ return []; } }
+function saveSurveys(a){ try{ localStorage.setItem(SURVEY_KEY, JSON.stringify(a)); }catch(e){ alert('Could not save survey: '+e.message); } }
+function destroyVoice(){ ['voice','voiceJourney','voiceTrend'].forEach(k=>{ if(charts[k]){try{charts[k].destroy();}catch(e){} delete charts[k];} }); }
+
+function groupIndex(items,g){ const gi=items.filter(x=>x.group===g); if(!gi.length) return null;
+  return {mean:round(Stat.mean(gi.map(x=>x.mean)),2), fav:round(Stat.mean(gi.map(x=>x.fav))), items:gi}; }
+
+function renderVoice(){
+  const el=document.getElementById('view-voice');
+  const head=pageHead('Student Voice','How students feel, and how much they think they grew',
+    'A separate, anonymous instrument for satisfaction and self-perceived growth. Deploy the questionnaire below in Google Forms or a Canvas survey, then upload the results CSV here. It is tagged with the Course, Term, and Stage from the top bar and tracked over time, right alongside your performance data.');
+  const surveys=loadSurveys();
+  const inst=currentInstrument(); const stageName=VOICE_INSTRUMENTS[State.stage]?State.stage:'End of semester';
+  const groupEntries=Object.entries(inst);
+  el.innerHTML=head+`
+    <div class="card"><h3>Questionnaire for: ${esc(stageName)}</h3>
+      <p class="sub">${esc(VOICE_SCALE)}. Change the <strong>Stage</strong> in the top bar to switch between the beginning, midterm, and end questionnaires. Deploy as an anonymous survey (no names) and copy these items into your form.</p>
+      <div class="grid g2">
+        ${groupEntries.map(([g,items])=>`<div><h4 style="color:var(--rust);margin:0 0 8px">${esc(g)}</h4>
+          <ol style="margin:0;padding-left:20px;font-size:13.5px">${items.map(q=>`<li style="margin-bottom:6px">${esc(q)}</li>`).join('')}</ol></div>`).join('')}
+      </div>
+      <div style="margin-top:14px"><button class="btn btn-ghost" id="voiceCopy">Copy this questionnaire</button></div>
+    </div>
+    <div class="controls" style="margin-top:16px"><div class="controls-row">
+      <label class="btn btn-primary" for="voiceUpload" role="button" tabindex="0"
+        onkeydown="if(event.key==='Enter'||event.key===' '){document.getElementById('voiceUpload').click();event.preventDefault();}">Upload survey CSV</label>
+      <input type="file" id="voiceUpload" accept=".csv,text/csv" aria-label="Upload student survey CSV">
+      <button class="btn btn-gold" id="voiceSave">Save survey snapshot</button>
+      <span style="font-size:12px;color:var(--navy);opacity:0.7">Tagged: ${esc(State.course||'(no course)')} · ${esc(State.term)} · ${esc(State.stage)}</span>
+    </div>
+    <p class="file-hint">CSV with one row per student and one column per Likert item (1 to 5, or the text labels). Timestamp, name, and email columns are ignored. Responses are analyzed in aggregate; nothing identifiable is stored.</p>
+    </div>
+    <div id="voiceResults"></div>
+    <div id="voiceJourneyWrap"></div>
+    <div id="voiceTrendWrap"></div>`;
+  document.getElementById('voiceCopy').addEventListener('click',()=>{
+    let n=0; let txt=stageName+' student voice survey\n'+VOICE_SCALE+'\n';
+    Object.entries(inst).forEach(([g,items])=>{ txt+='\n'+g.toUpperCase()+'\n'+items.map(q=>(++n)+'. '+q).join('\n')+'\n'; });
+    navigator.clipboard?.writeText(txt); const b=document.getElementById('voiceCopy'); b.textContent='Copied'; setTimeout(()=>b.textContent='Copy this questionnaire',1500); });
+  document.getElementById('voiceUpload').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader(); r.onload=()=>{ try{ const parsed=parseSurvey(parseCSV(r.result));
+      if(!parsed||!parsed.items.length){ alert('No Likert-scale (1 to 5) columns found in that file.'); return; }
+      Voice.items=parsed.items; Voice.n=parsed.n; renderVoiceResults();
+    }catch(err){ alert('Error reading survey: '+err.message); } };
+    r.readAsText(f); document.getElementById('voiceUpload').value=''; });
+  document.getElementById('voiceSave').addEventListener('click',()=>{
+    if(!Voice.items.length){ alert('Upload a survey first.'); return; }
+    const groups={}; [...new Set(Voice.items.map(x=>x.group))].filter(g=>g!=='Other').forEach(g=>{
+      const gi=groupIndex(Voice.items,g); groups[g]={mean:gi.mean,fav:gi.fav}; });
+    const sat=groupIndex(Voice.items,'Satisfaction'), grow=groupIndex(Voice.items,'Growth');
+    const snap={course:State.course||'(unlabeled)',term:State.term,stage:State.stage||'(unstaged)',date:new Date().toISOString().slice(0,10),
+      n:Voice.n, groups, satIndex:sat?sat.mean:null, growthIndex:grow?grow.mean:null,
+      overall:round(Stat.mean(Voice.items.map(x=>x.mean)),2)};
+    const db=loadSurveys(); const ix=db.findIndex(s=>s.course===snap.course&&s.term===snap.term&&s.stage===snap.stage);
+    if(ix>=0)db[ix]=snap; else db.push(snap); saveSurveys(db);
+    alert('Saved survey snapshot for '+snap.course+' · '+snap.term+' · '+snap.stage); renderVoiceJourney(); renderVoiceTrend(); });
+  renderVoiceResults(); renderVoiceJourney(); renderVoiceTrend();
+}
+function renderVoiceResults(){
+  const host=document.getElementById('voiceResults'); if(!host) return;
+  destroyVoice();
+  if(!Voice.items.length){ host.innerHTML=emptyView('Upload a survey CSV to see the results for this stage.'); return; }
+  const overall=round(Stat.mean(Voice.items.map(x=>x.mean)),2);
+  const grpNames=[...new Set(Voice.items.map(x=>x.group))].filter(g=>g!=='Other').slice(0,2);
+  const grpTiles=grpNames.map(g=>{ const gi=groupIndex(Voice.items,g);
+    return statTile(g+' index',gi.mean+' / 5',gi.fav+'% favorable','accent-gold'); }).join('');
+  host.innerHTML=`
+    <div class="grid g4">
+      ${statTile('Responses',Voice.n,esc(State.stage)+' · anonymous','accent-navy')}
+      ${grpTiles}
+      ${statTile('Overall',overall+' / 5','All items','accent-rust')}
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Item means</h3><p class="sub">Average agreement per question (1 to 5). Gold = growth, navy = satisfaction, rust = other.</p>
+      <div class="chart-wrap tall"><canvas id="voiceChart"></canvas></div></div>
+    <div class="card" style="margin-top:16px"><h3>Item detail</h3>
+      <table class="tbl"><thead><tr><th>Item</th><th>Type</th><th>Mean</th><th>% Favorable</th><th>n</th></tr></thead>
+      <tbody>${Voice.items.map(x=>`<tr><td>${esc(x.q)}</td>
+        <td><span class="badge ${x.group==='Growth'?'b-near':x.group==='Satisfaction'?'b-comp':'b-below'}">${x.group}</span></td>
+        <td class="num">${x.mean}</td><td class="num">${x.fav}%</td><td class="num">${x.n}</td></tr>`).join('')}</tbody></table>
+      ${interpBox(voiceInterp(Voice.items))}</div>`;
+  const cols=Voice.items.map(x=>x.group==='Growth'?C.gold:x.group==='Satisfaction'?C.navy:C.rust);
+  charts.voice=new Chart(document.getElementById('voiceChart'),{type:'bar',
+    data:{labels:Voice.items.map(x=>x.q.length>42?x.q.slice(0,40)+'…':x.q),
+      datasets:[{label:'Mean (1-5)',data:Voice.items.map(x=>x.mean),backgroundColor:cols}]},
+    options:{...chartOpts('Mean agreement',0,5),indexAxis:'y'}});
+}
+function voiceInterp(items){
+  const sorted=[...items].sort((a,b)=>a.mean-b.mean); const low=sorted[0], high=sorted[sorted.length-1];
+  const grps=[...new Set(items.map(x=>x.group))].filter(g=>g!=='Other');
+  let t='For the '+esc(State.stage)+' survey, ';
+  const parts=grps.map(g=>{ const gi=groupIndex(items,g); return g.toLowerCase()+' sits at '+gi.mean+'/5 ('+gi.fav+'% favorable)'; });
+  t+= parts.length? parts.join(' and ')+'. ' : 'responses averaged '+round(Stat.mean(items.map(x=>x.mean)),2)+'/5. ';
+  t+='The highest-rated item is "'+esc(high.q)+'" ('+high.mean+'/5) and the lowest is "'+esc(low.q)+'" ('+low.mean+'/5), which is your clearest target for change. ';
+  t+='Save this snapshot so this checkpoint joins the beginning/middle/end journey and trends across semesters.';
+  return t;
+}
+function renderVoiceJourney(){
+  const wrap=document.getElementById('voiceJourneyWrap'); if(!wrap) return;
+  const all=loadSurveys();
+  const db=all.filter(s=>s.course===(State.course||'(unlabeled)')&&s.term===State.term)
+    .sort((a,b)=>stageOrder(a.stage)-stageOrder(b.stage));
+  if(db.length<2){ wrap.innerHTML=''; return; }
+  const labels=db.map(s=>s.stage);
+  wrap.innerHTML=`<div class="card" style="margin-top:16px"><h3>This term's journey — ${esc(State.course||'course')} · ${esc(State.term)}</h3>
+    <p class="sub">How student sentiment moved from beginning to middle to end. Overall index (1 to 5) across the checkpoints you saved this term.</p>
+    <div class="chart-wrap"><canvas id="voiceJourney"></canvas></div>
+    ${interpBox(journeyInterp(db))}</div>`;
+  if(charts.voiceJourney){try{charts.voiceJourney.destroy();}catch(e){}}
+  charts.voiceJourney=new Chart(document.getElementById('voiceJourney'),{type:'line',
+    data:{labels,datasets:[{label:'Overall (1-5)',data:db.map(s=>s.overall),borderColor:C.rust,
+      backgroundColor:'rgba(139,58,46,0.1)',tension:0.2,fill:true,pointBackgroundColor:C.gold,pointRadius:6}]},
+    options:chartOpts('Index (1-5)',0,5)});
+}
+function journeyInterp(db){ const first=db[0], last=db[db.length-1];
+  const d=round(last.overall-first.overall,2);
+  if(Math.abs(d)<0.15) return 'Sentiment stayed steady from '+esc(first.stage)+' ('+first.overall+'/5) to '+esc(last.stage)+' ('+last.overall+'/5). Expectations held up through the term.';
+  if(d>0) return 'Sentiment rose from '+esc(first.stage)+' ('+first.overall+'/5) to '+esc(last.stage)+' ('+last.overall+'/5), a gain of '+d+' points. Students ended more positive than they began, which is a strong signal the format delivered on its promise.';
+  return 'Sentiment fell from '+esc(first.stage)+' ('+first.overall+'/5) to '+esc(last.stage)+' ('+last.overall+'/5), a drop of '+Math.abs(d)+' points. The midterm check-in is where you can catch this next time, before it settles in.';
+}
+function renderVoiceTrend(){
+  const wrap=document.getElementById('voiceTrendWrap'); if(!wrap) return;
+  const all=loadSurveys();
+  const db=(State.course? all.filter(s=>s.course===State.course):all).sort((a,b)=>termOrder(a.term)-termOrder(b.term));
+  if(db.length<1){ wrap.innerHTML=''; return; }
+  wrap.innerHTML=`<div class="card" style="margin-top:16px"><h3>Sentiment over time${State.course?' — '+esc(State.course):''}</h3>
+    <p class="sub">Saved survey snapshots by term. Satisfaction and growth indices (1 to 5).</p>
+    <div class="chart-wrap"><canvas id="voiceTrend"></canvas></div>
+    <table class="tbl" style="margin-top:12px"><thead><tr><th>Course</th><th>Term</th><th>Stage</th><th>n</th><th>Satisfaction</th><th>Growth</th><th>Overall</th></tr></thead>
+    <tbody>${db.map(s=>`<tr><td>${esc(s.course)}</td><td>${esc(s.term)}</td><td>${esc(s.stage||'—')}</td><td class="num">${s.n}</td>
+      <td class="num">${s.satIndex??'—'}</td><td class="num">${s.growthIndex??'—'}</td><td class="num">${s.overall??'—'}</td></tr>`).join('')}</tbody></table></div>`;
+  const labels=db.map(s=>s.term+(s.stage&&s.stage!=='(unstaged)'?' ('+s.stage+')':''));
+  charts.voiceTrend=new Chart(document.getElementById('voiceTrend'),{type:'line',
+    data:{labels,datasets:[
+      {label:'Satisfaction',data:db.map(s=>s.satIndex),borderColor:C.navy,backgroundColor:'transparent',tension:0.2,spanGaps:true,pointRadius:5},
+      {label:'Growth',data:db.map(s=>s.growthIndex),borderColor:C.gold,backgroundColor:'transparent',tension:0.2,spanGaps:true,pointRadius:5}]},
+    options:chartOpts('Index (1-5)',0,5)});
+}
+
+/* ---------- 10. LONGITUDINAL ---------- */
+const longFilter={course:'All', stage:'All', terms:null, by:'term', metric:'mean', target:80};
+const METRICS={ mean:{label:'Class mean %',dir:1}, compPct:{label:'Competency %',dir:1},
+  passPct:{label:'Passing %',dir:1}, dfwPct:{label:'DFW %',dir:-1} };
+function termOrder(t){ const m=String(t).match(/(Winter|Spring|Summer|Fall)\s*(\d{4})/i);
+  if(!m) return 0; const seas={winter:0,spring:1,summer:2,fall:3}; return parseInt(m[2])*10+(seas[m[1].toLowerCase()]??0); }
+function renderLongitudinal(){
+  const el=document.getElementById('view-longitudinal');
+  const db=loadDB();
+  let head=pageHead('Longitudinal','Compare courses and semesters, and track your progress',
+    'Pick exactly which semesters to compare, slice by course, and watch the progress board to see whether each cohort is improving against your baseline and your ideal target. Only anonymized aggregates are stored.');
+  if(!db.length){ el.innerHTML=head+emptyView('No snapshots saved yet. Analyze an assessment, tag it with a course and term, then use "Save snapshot" on the Longitudinal database page to start building history.'); return; }
+  const courses=['All',...new Set(db.map(s=>s.course||'(unlabeled)'))];
+  const stages=['All',...new Set(db.map(s=>s.stage||'(unstaged)'))];
+  const allTerms=[...new Set(db.map(s=>s.term))].sort((a,b)=>termOrder(a)-termOrder(b));
+  if(!courses.includes(longFilter.course)) longFilter.course='All';
+  if(!stages.includes(longFilter.stage)) longFilter.stage='All';
+  if(!longFilter.terms) longFilter.terms=[...allTerms];
+  longFilter.terms=longFilter.terms.filter(t=>allTerms.includes(t)); if(!longFilter.terms.length) longFilter.terms=[...allTerms];
+  el.innerHTML=head+`
+    <div class="controls">
+      <div class="controls-row">
+        <div class="field"><label for="lfCourse">Course</label>
+          <select id="lfCourse">${courses.map(c=>`<option${c===longFilter.course?' selected':''}>${esc(c)}</option>`).join('')}</select></div>
+        <div class="field"><label for="lfStage">Stage</label>
+          <select id="lfStage">${stages.map(s=>`<option${s===longFilter.stage?' selected':''}>${esc(s)}</option>`).join('')}</select></div>
+        <div class="field"><label for="lfBy">Compare lines by</label>
+          <select id="lfBy">
+            <option value="term"${longFilter.by==='term'?' selected':''}>Semester</option>
+            <option value="course"${longFilter.by==='course'?' selected':''}>Course</option>
+            <option value="course-term"${longFilter.by==='course-term'?' selected':''}>Course + Semester</option>
+          </select></div>
+        <div class="field"><label for="lfMetric">Progress metric</label>
+          <select id="lfMetric">${Object.entries(METRICS).map(([k,v])=>`<option value="${k}"${longFilter.metric===k?' selected':''}>${v.label}</option>`).join('')}</select></div>
+        <div class="field"><label for="lfTarget">Ideal target %</label>
+          <input type="number" id="lfTarget" value="${longFilter.target}" min="0" max="100" step="1" style="min-width:90px"></div>
+      </div>
+      <div style="margin-top:10px">
+        <span style="font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust)">Semesters to compare</span>
+        <div id="lfTerms" style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:8px">
+          ${allTerms.map(t=>`<label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer">
+            <input type="checkbox" class="lf-term" value="${esc(t)}"${longFilter.terms.includes(t)?' checked':''}> ${esc(t)}</label>`).join('')}
+          <button class="btn btn-ghost" id="lfAll" style="padding:4px 10px;font-size:10px">All</button>
+          <button class="btn btn-ghost" id="lfNone" style="padding:4px 10px;font-size:10px">None</button>
+        </div>
+      </div>
+    </div>
+    <div id="longBody"></div>`;
+  const cSel=document.getElementById('lfCourse'), sSel=document.getElementById('lfStage'), bSel=document.getElementById('lfBy'),
+        mSel=document.getElementById('lfMetric'), tgt=document.getElementById('lfTarget');
+  const collectTerms=()=>[...document.querySelectorAll('.lf-term:checked')].map(c=>c.value);
+  const upd=()=>{ longFilter.course=cSel.value; longFilter.stage=sSel.value; longFilter.by=bSel.value; longFilter.metric=mSel.value;
+    longFilter.target=parseFloat(tgt.value)||80; longFilter.terms=collectTerms(); renderLongBody(); };
+  [cSel,sSel,bSel,mSel,tgt].forEach(x=>x.addEventListener('change',upd));
+  document.querySelectorAll('.lf-term').forEach(c=>c.addEventListener('change',upd));
+  document.getElementById('lfAll').addEventListener('click',()=>{ document.querySelectorAll('.lf-term').forEach(c=>c.checked=true); upd(); });
+  document.getElementById('lfNone').addEventListener('click',()=>{ document.querySelectorAll('.lf-term').forEach(c=>c.checked=false); upd(); });
+  renderLongBody();
+}
+function renderLongBody(){
+  const all=loadDB();
+  const terms=longFilter.terms||[];
+  const db=all.filter(s=>(longFilter.course==='All'||(s.course||'(unlabeled)')===longFilter.course)
+                       && (longFilter.stage==='All'||(s.stage||'(unstaged)')===longFilter.stage)
+                       && terms.includes(s.term));
+  const body=document.getElementById('longBody');
+  if(!db.length){ body.innerHTML=emptyView('No snapshots match the current course and semester selection.'); return; }
+  const keyFn = longFilter.by==='course' ? (s=>s.course||'(unlabeled)')
+    : longFilter.by==='course-term' ? (s=>(s.course||'(unlabeled)')+' · '+s.term)
+    : (s=>s.term);
+  const groups=[...new Set(db.map(keyFn))];
+  const assessOrder=[...new Set(db.map(s=>s.assessment))];
+  const palette=[C.rust,C.navy,C.gold,C.good,'#7a5f1e','#5a2018','#3E6B8B','#8B6F3E'];
+  const courses=[...new Set(db.map(s=>s.course||'(unlabeled)'))];
+  const usedTerms=[...new Set(db.map(s=>s.term))].sort((a,b)=>termOrder(a)-termOrder(b));
+
+  // ---- Progress board series: one line per course across selected terms (chronological) ----
+  const metric=longFilter.metric, mdef=METRICS[metric], target=longFilter.target;
+  const boardCourses = longFilter.course==='All' ? courses : [longFilter.course];
+  const board=boardCourses.map(c=>({ course:c, points:usedTerms.map(t=>{ const rows=db.filter(s=>(s.course||'(unlabeled)')===c&&s.term===t);
+    return rows.length? round(Stat.mean(rows.map(r=>r[metric]))) : null; }) }));
+  const summaryRows=[];
+  courses.forEach(c=>usedTerms.forEach(t=>{ const rows=db.filter(s=>(s.course||'(unlabeled)')===c&&s.term===t);
+    if(rows.length) summaryRows.push({course:c,term:t,n:rows.length,
+      mean:round(Stat.mean(rows.map(r=>r.mean))),comp:round(Stat.mean(rows.map(r=>r.compPct))),dfw:round(Stat.mean(rows.map(r=>r.dfwPct)))}); }));
+
+  body.innerHTML=`
+    <div class="grid g4">
+      ${statTile('Snapshots',db.length,longFilter.course==='All'?'All courses':esc(longFilter.course),'accent-navy')}
+      ${statTile('Semesters shown',usedTerms.length,'of your selection','accent-gold')}
+      ${statTile('Courses',courses.length,'','accent-rust')}
+      ${statTile('Ideal target',target+'%',mdef.label,'accent-gold')}
+    </div>
+
+    <div class="card" style="margin-top:16px"><h3>Progress board — ${esc(mdef.label)} by semester</h3>
+      <p class="sub">Each line is a course across the semesters you selected, in chronological order. Gold dashed line is your ideal target. First selected semester is the baseline.</p>
+      <div class="chart-wrap tall"><canvas id="longProg"></canvas></div>
+      ${progressTable(board,usedTerms,mdef,target)}
+      ${interpBox(progressInterp(board,usedTerms,mdef,target))}</div>
+
+    <div class="card" style="margin-top:16px"><h3>Class mean by assessment</h3>
+      <p class="sub">Each line is one ${longFilter.by==='course'?'course':longFilter.by==='course-term'?'course + semester':'semester'}.</p>
+      <div class="chart-wrap tall"><canvas id="longMean"></canvas></div></div>
+    <div class="card" style="margin-top:16px"><h3>Course × semester comparison</h3>
+      <table class="tbl"><thead><tr><th>Course</th><th>Term</th><th>Assessments</th><th>Avg mean</th><th>Avg competency</th><th>Avg DFW</th></tr></thead>
+      <tbody>${summaryRows.map(r=>`<tr><td>${esc(r.course)}</td><td>${esc(r.term)}</td><td class="num">${r.n}</td>
+        <td class="num">${r.mean}%</td><td class="num">${r.comp}%</td><td class="num">${r.dfw}%</td></tr>`).join('')}</tbody></table></div>
+    <div class="card" style="margin-top:16px"><h3>Control chart: class mean over these snapshots</h3>
+      <p class="sub">Center line and ±2σ limits. Points outside the band exceed normal variation.</p>
+      <div class="chart-wrap"><canvas id="longCtrl"></canvas></div></div>
+    ${changesContextCard(longFilter.course,usedTerms)}`;
+
+  destroyLong();
+  // progress chart
+  const progDs=board.map((b,i)=>({label:b.course,data:b.points,borderColor:palette[i%palette.length],
+    backgroundColor:'transparent',tension:0.2,spanGaps:true,pointRadius:5}));
+  progDs.push({label:'Ideal target',data:usedTerms.map(()=>target),borderColor:C.gold,borderDash:[6,4],pointRadius:0,borderWidth:2});
+  charts.longProg=new Chart(document.getElementById('longProg'),{type:'line',
+    data:{labels:usedTerms,datasets:progDs},options:chartOpts(mdef.label,0,100)});
+  // mean-by-assessment
+  const dsets=groups.map((g,i)=>({label:g,data:assessOrder.map(a=>{ const s=db.find(x=>keyFn(x)===g&&x.assessment===a); return s?s.mean:null; }),
+    borderColor:palette[i%palette.length],backgroundColor:'transparent',tension:0.2,spanGaps:true,pointRadius:4}));
+  charts.longMean=new Chart(document.getElementById('longMean'),{type:'line',
+    data:{labels:assessOrder,datasets:dsets},options:chartOpts('%',0,100)});
+  // control chart
+  const means=db.map(s=>s.mean); const cl=Stat.mean(means), sd=Stat.sd(means);
+  charts.longCtrl=new Chart(document.getElementById('longCtrl'),{type:'line',
+    data:{labels:db.map(s=>(s.course||'')+' '+s.term+' '+s.assessment),datasets:[
+      {label:'Class mean',data:means,borderColor:C.navy,pointBackgroundColor:C.gold,pointRadius:5,tension:0.1},
+      {label:'Center',data:means.map(()=>round(cl)),borderColor:C.gold,borderDash:[6,4],pointRadius:0},
+      {label:'+2σ',data:means.map(()=>round(cl+2*sd)),borderColor:C.rust,borderDash:[3,3],pointRadius:0},
+      {label:'−2σ',data:means.map(()=>round(cl-2*sd)),borderColor:C.rust,borderDash:[3,3],pointRadius:0}]},
+    options:chartOpts('%')});
+}
+function arrow(delta,dir){ const good=(delta*dir)>0; const flat=Math.abs(delta)<0.05;
+  if(flat) return '<span style="color:#7a5f1e">→ 0.0</span>';
+  const sym=delta>0?'▲':'▼'; const col=good?'#2E7D5B':'#8B3A2E';
+  return '<span style="color:'+col+';font-weight:800">'+sym+' '+(delta>0?'+':'')+round(delta,1)+'</span>'; }
+function progressTable(board,terms,mdef,target){
+  const rows=board.map(b=>{ const vals=b.points; const first=vals.find(v=>v!=null);
+    let last=null,lastIdx=-1; vals.forEach((v,i)=>{ if(v!=null){last=v;lastIdx=i;} });
+    let prev=null; for(let i=lastIdx-1;i>=0;i--){ if(vals[i]!=null){prev=vals[i];break;} }
+    const dBase=(last!=null&&first!=null)?last-first:null;
+    const dPrev=(last!=null&&prev!=null)?last-prev:null;
+    const atTarget=last!=null?(mdef.dir>0?last>=target:last<=target):false;
+    return {course:b.course,baseline:first,last,dBase,dPrev,atTarget}; });
+  return `<table class="tbl" style="margin-top:14px"><thead><tr><th>Course</th><th>Baseline</th><th>Latest</th><th>Δ vs previous</th><th>Δ vs baseline</th><th>Vs target</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr><td><strong>${esc(r.course)}</strong></td>
+      <td class="num">${r.baseline!=null?r.baseline+'%':'—'}</td>
+      <td class="num">${r.last!=null?r.last+'%':'—'}</td>
+      <td class="num">${r.dPrev!=null?arrow(r.dPrev,mdef.dir):'—'}</td>
+      <td class="num">${r.dBase!=null?arrow(r.dBase,mdef.dir):'—'}</td>
+      <td class="num"><span class="badge ${r.atTarget?'b-comp':'b-below'}">${r.atTarget?'At / above':'Below'}</span></td></tr>`).join('')}</tbody></table>`;
+}
+function destroyLong(){ ['longProg','longMean','longCtrl'].forEach(k=>{ if(charts[k]){try{charts[k].destroy();}catch(e){} delete charts[k];} }); }
+function changesContextCard(course,terms){
+  const chg=loadChanges().filter(c=>(course==='All'||c.course===course)&&(!c.term||terms.includes(c.term)))
+    .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  if(!chg.length) return '<div class="card" style="margin-top:16px"><h3>Course changes in this view</h3><p class="sub">No changes logged for this selection. Add them on the Longitudinal database page so score shifts can be read against what you changed.</p></div>';
+  return `<div class="card" style="margin-top:16px"><h3>Course changes in this view</h3>
+    <p class="sub">Context for the comparison above. A shift right after one of these is a candidate cause, not proof, but it is exactly what belongs in a redesign or SoTL writeup.</p>
+    <table class="tbl"><thead><tr><th>Date</th><th>Course</th><th>Term</th><th>Category</th><th>Change</th></tr></thead>
+    <tbody>${chg.map(c=>`<tr><td>${esc(c.date)}</td><td>${esc(c.course)}</td><td>${esc(c.term)}</td><td><span class="badge b-near">${esc(c.category)}</span></td><td>${esc(c.text)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function progressInterp(board,terms,mdef,target){
+  if(terms.length<2) return 'Select at least two semesters to see whether you are improving. Backfill past semesters by uploading each old exam CSV, tagging its course and term, and saving a snapshot.';
+  const parts=board.map(b=>{ const vals=b.points.filter(v=>v!=null); if(vals.length<2) return null;
+    const first=vals[0], last=vals[vals.length-1]; const change=(last-first)*mdef.dir;
+    const dirWord=change>0.05?'improving':change<-0.05?'declining':'holding steady';
+    const vsTarget=(mdef.dir>0?last>=target:last<=target)?'now at or beyond your '+target+'% target':'still short of your '+target+'% target';
+    return b.course+' is '+dirWord+' ('+(last-first>0?'+':'')+round(last-first,1)+' points from baseline) and is '+vsTarget; }).filter(Boolean);
+  if(!parts.length) return 'Not enough repeated semesters per course yet. Add another term to start the trend.';
+  return parts.join('. ')+'. The control chart below shows whether these moves exceed normal semester-to-semester noise.';
+}
+
+/* ---------- 10. AI INSTRUCTOR REPORT ---------- */
+function renderAI(){
+  const el=document.getElementById('view-ai');
+  let head=pageHead('AI Instructor Report','Auto-written narrative',
+    'A plain-language report generated from the current data: executive summary, strengths, areas to improve, suggested interventions, a student announcement, and a conference-ready paragraph. Copy and adapt.');
+  if(!State.raw){ el.innerHTML=head+emptyView('No data loaded yet.'); return; }
+  const pct=currentPct(); const d=Stat.describe(pct); const valid=Stat.clean(pct);
+  const passPct=round(100*valid.filter(v=>v>=State.passThresh).length/valid.length);
+  const compPct=round(100*valid.filter(v=>v>=State.compThresh).length/valid.length);
+  const cols=allPct();
+  let growthTxt=''; if(cols.length>=2){ const pt=Stat.pairedT(cols[0].pct,cols[cols.length-1].pct);
+    growthTxt=Interp.growth(pt.meanDiff,pt.p,pt.d); }
+  const strengths=[]; const improves=[];
+  if(passPct>=80) strengths.push('a strong pass rate ('+passPct+'%)'); else improves.push('a pass rate of '+passPct+'% that leaves room to grow');
+  if(d.cv<20) strengths.push('consistent performance (CV '+round(d.cv)+'%)'); else improves.push('wide score spread (CV '+round(d.cv)+'%) indicating the class is splitting into groups');
+  if(compPct>=60) strengths.push('solid mastery ('+compPct+'% competent)'); else improves.push('competency at '+compPct+'%, below where you likely want it');
+  const report=`
+EXECUTIVE SUMMARY
+On ${State.primaryCol} (${State.course?State.course+', ':''}${State.term}), ${valid.length} students scored a mean of ${round(d.mean)}% (median ${round(d.median)}%, SD ${round(d.sd)}). ${passPct}% passed and ${compPct}% reached competency. ${Interp.spread(d.cv)} ${growthTxt}
+
+STRENGTHS
+The class showed ${strengths.length?strengths.join(', '):'areas of steady effort'}. ${Interp.pass(passPct)}
+
+AREAS TO IMPROVE
+Watch for ${improves.length?improves.join('; '):'no major red flags this cycle'}.
+
+SUGGESTED INTERVENTIONS
+${passPct<75?'Run a targeted review or small-group session for the below-passing cohort this week, before the next assessment compounds the gap. ':''}${d.cv>=25?'Because scores are widely spread, differentiate: stretch work for the top group, retrieval practice and worked examples for the struggling group. ':''}${compPct<60?'Add low-stakes spaced-recall checkpoints to move more students to mastery. ':''}Reach non-submitters directly, since early disengagement is the strongest predictor of withdrawal.
+
+PREDICTED RISKS
+If the current pattern holds, roughly ${round(100*valid.filter(v=>v<State.passThresh).length/valid.length)}% of active students are on a DFW trajectory for this assessment. The students who did not submit are the highest-priority outreach.
+
+STUDENT ANNOUNCEMENT (draft)
+Hi everyone. Results for ${State.primaryCol} are in. The class averaged ${round(d.mean)}% and many of you showed real growth. If your score was not where you wanted it, that is information, not a verdict. Come to office hours this week and we will make a plan. Deadlines are close by design, so reach out before the next one, not after. Dr. Sharilyn Rennie
+
+CONTEXT / CHANGES THIS TERM
+${(()=>{ const chg=loadChanges().filter(c=>(c.course===(State.course||'(unlabeled)'))&&(!c.term||c.term===State.term));
+  return chg.length? chg.map(c=>'- ('+c.category+') '+c.text+(c.date?' ['+c.date+']':'')).join('\n')+'\nRead the results above with these changes in mind; a shift may reflect a change you made, not a change in the students.'
+    : 'No course changes logged for this course and term. Log any interventions on the Longitudinal database page to strengthen your interpretation.'; })()}
+
+CONFERENCE-READY NARRATIVE
+In ${State.course?State.course+', ':''}${State.term}, ${valid.length} students completed ${State.primaryCol} with a mean of ${round(d.mean)}% (SD ${round(d.sd)}); ${compPct}% met the ${State.compThresh}% competency threshold. ${growthTxt} These data are captured after each assessment and aggregated across terms to support longitudinal analysis of instructional effectiveness.`;
+  el.innerHTML=head+`
+    <div class="card"><h3>Generated report</h3><p class="sub">Rebuilds every time you analyze. Copy the text below.</p>
+      <textarea id="aiText" style="width:100%;min-height:520px;font:inherit;font-size:13.5px;line-height:1.6;padding:16px;border:1px solid var(--line-strong);border-radius:8px;color:var(--navy);white-space:pre-wrap" readonly>${esc(report.trim())}</textarea>
+      <div style="margin-top:12px"><button class="btn btn-gold" id="copyAI">Copy report</button></div></div>`;
+  document.getElementById('copyAI').addEventListener('click',()=>{ const t=document.getElementById('aiText');
+    t.select(); document.execCommand('copy'); const b=document.getElementById('copyAI'); b.textContent='Copied'; setTimeout(()=>b.textContent='Copy report',1500); });
+}
+
+/* ---------- Longitudinal I/O page ---------- */
+function renderLongIO(){
+  const el=document.getElementById('view-longitudinal-io');
+  const db=loadDB();
+  const changes=loadChanges();
+  el.innerHTML=pageHead('Longitudinal Database','Save, export, and manage snapshots',
+    'Snapshots are anonymized class aggregates only. Save one after each analysis to build multi-year history. Export to a file so your data survives browser clears and moves between computers.')+`
+    <div class="card"><h3>Save current analysis as a snapshot</h3>
+      <p class="sub">Stores term, assessment, n, mean, SD, competency, DFW, and grade counts. No student identifiers.</p>
+      <button class="btn btn-primary" id="saveSnap">Save snapshot</button>
+      <span id="saveMsg" style="margin-left:12px;font-size:13px;font-weight:700;color:var(--good)"></span></div>
+    <div class="card" style="margin-top:16px"><h3>Stored snapshots (${db.length})</h3>
+      ${db.length?`<table class="tbl"><thead><tr><th>Course</th><th>Term</th><th>Stage</th><th>Assessment</th><th>Date</th><th>n</th><th>Mean</th><th>SD</th><th>Comp%</th><th>DFW%</th><th></th></tr></thead>
+      <tbody>${db.map((s,i)=>`<tr><td>${esc(s.course||'(unlabeled)')}</td><td>${esc(s.term)}</td><td>${esc(s.stage||'—')}</td><td>${esc(s.assessment)}</td><td>${s.date}</td>
+        <td class="num">${s.n}</td><td class="num">${s.mean}</td><td class="num">${s.sd}</td><td class="num">${s.compPct}</td><td class="num">${s.dfwPct}</td>
+        <td><button class="btn btn-ghost" style="padding:5px 10px;font-size:10px" data-del="${i}">Delete</button></td></tr>`).join('')}</tbody></table>`
+      :'<p class="sub">No snapshots yet.</p>'}</div>
+    <div class="card" style="margin-top:16px"><h3>Backup &amp; transfer</h3>
+      <p class="sub">Export downloads a JSON file. Import merges a file back in (useful for a new computer or after clearing your browser).</p>
+      <button class="btn btn-gold" id="expBtn">Export JSON</button>
+      <label class="btn btn-ghost" for="impInput" role="button" tabindex="0" style="margin-left:8px">Import JSON</label>
+      <input type="file" id="impInput" accept=".json,application/json" aria-label="Import longitudinal JSON">
+      <button class="btn btn-ghost" id="clearBtn" style="margin-left:8px">Clear all snapshots</button></div>
+    <div class="card" style="margin-top:16px"><h3>Course change log</h3>
+      <p class="sub">Record what you changed and when (added recorded lectures, switched to TBL, new assessment, policy change). These notes surface as context on the Longitudinal page and in the AI report, so score differences across semesters can be read against what actually changed. No student data.</p>
+      <div class="controls-row" style="align-items:flex-end">
+        <div class="field"><label for="chgDate">Date</label><input type="date" id="chgDate" value="${new Date().toISOString().slice(0,10)}"></div>
+        <div class="field"><label for="chgCourse">Course</label><input type="text" id="chgCourse" list="courseList" value="${esc(State.course||'')}"></div>
+        <div class="field"><label for="chgTerm">Term</label><input type="text" id="chgTerm" value="${esc(State.term||'')}" style="min-width:130px"></div>
+        <div class="field"><label for="chgCat">Category</label><select id="chgCat">
+          <option>Instruction</option><option>Assessment</option><option>Content</option><option>Policy</option><option>Technology</option><option>Other</option></select></div>
+      </div>
+      <div class="field" style="margin-top:10px"><label for="chgText">What changed</label>
+        <input type="text" id="chgText" placeholder="e.g. Added recorded lectures for the nervous system unit" style="min-width:min(560px,90%)"></div>
+      <div style="margin-top:10px"><button class="btn btn-primary" id="chgAdd">Add change</button></div>
+      ${changes.length?`<table class="tbl" style="margin-top:14px"><thead><tr><th>Date</th><th>Course</th><th>Term</th><th>Category</th><th>Change</th><th></th></tr></thead>
+        <tbody>${changes.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(c=>`<tr><td>${esc(c.date)}</td><td>${esc(c.course)}</td><td>${esc(c.term)}</td><td><span class="badge b-near">${esc(c.category)}</span></td><td>${esc(c.text)}</td>
+          <td><button class="btn btn-ghost" style="padding:5px 10px;font-size:10px" data-chgdel="${esc(c.id)}">Delete</button></td></tr>`).join('')}</tbody></table>`
+        :'<p class="sub" style="margin-top:10px">No changes logged yet.</p>'}
+    </div>`;
+  document.getElementById('saveSnap').addEventListener('click',()=>{
+    const snap=makeSnapshot(); if(!snap){ alert('Load and analyze an assessment first.'); return; }
+    const db=loadDB(); // dedupe same course+term+stage+assessment
+    const ix=db.findIndex(s=>s.course===snap.course&&s.term===snap.term&&s.stage===snap.stage&&s.assessment===snap.assessment);
+    if(ix>=0) db[ix]=snap; else db.push(snap); saveDB(db);
+    document.getElementById('saveMsg').textContent='Saved '+snap.course+' · '+snap.term+' · '+snap.stage+' · '+snap.assessment; renderLongIO();
+  });
+  el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{ const db=loadDB(); db.splice(parseInt(b.dataset.del),1); saveDB(db); renderLongIO(); }));
+  document.getElementById('chgAdd').addEventListener('click',()=>{ const text=document.getElementById('chgText').value.trim();
+    if(!text){ alert('Describe the change first.'); return; }
+    const list=loadChanges(); list.push({ id:'c'+Date.now()+Math.random().toString(36).slice(2,6),
+      date:document.getElementById('chgDate').value||new Date().toISOString().slice(0,10),
+      course:document.getElementById('chgCourse').value.trim()||'(unlabeled)',
+      term:document.getElementById('chgTerm').value.trim(),
+      category:document.getElementById('chgCat').value, text }); saveChanges(list); renderLongIO(); });
+  el.querySelectorAll('[data-chgdel]').forEach(b=>b.addEventListener('click',()=>{ saveChanges(loadChanges().filter(c=>c.id!==b.dataset.chgdel)); renderLongIO(); }));
+  document.getElementById('expBtn').addEventListener('click',()=>{
+    const backup={ _type:'teaching-effectiveness-backup', version:2, exported:new Date().toISOString(),
+      snapshots:loadDB(), surveys:loadSurveys(), changes:loadChanges(), sloMaps:loadSLOMaps() };
+    const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='teaching-effectiveness-backup.json'; a.click(); });
+  document.getElementById('impInput').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader(); r.onload=()=>{ try{ const inc=JSON.parse(r.result);
+      const snaps = Array.isArray(inc) ? inc : (inc.snapshots||[]);
+      const db=loadDB();
+      snaps.forEach(s=>{ if(!s.course)s.course='(unlabeled)'; if(!s.stage)s.stage='(unstaged)'; const ix=db.findIndex(x=>x.course===s.course&&x.term===s.term&&x.stage===s.stage&&x.assessment===s.assessment); if(ix>=0)db[ix]=s; else db.push(s); });
+      saveDB(db);
+      let msg='Imported '+snaps.length+' snapshots';
+      if(!Array.isArray(inc)){
+        if(inc.surveys){ const sv=loadSurveys(); inc.surveys.forEach(s=>{ const ix=sv.findIndex(x=>x.course===s.course&&x.term===s.term&&x.stage===s.stage); if(ix>=0)sv[ix]=s; else sv.push(s); }); saveSurveys(sv); msg+=', '+inc.surveys.length+' surveys'; }
+        if(inc.changes){ const ch=loadChanges(); const ids=new Set(ch.map(c=>c.id)); inc.changes.forEach(c=>{ if(!ids.has(c.id)) ch.push(c); }); saveChanges(ch); msg+=', '+inc.changes.length+' changes'; }
+        if(inc.sloMaps){ const sm=loadSLOMaps(); Object.assign(sm,inc.sloMaps); saveSLOMaps(sm); }
+      }
+      renderLongIO(); alert(msg+'.'); }catch(err){ alert('Invalid file: '+err.message); } };
+    r.readAsText(f); });
+  document.getElementById('clearBtn').addEventListener('click',()=>{ if(confirm('Delete all stored snapshots? Export a backup first if unsure. (Change log and surveys are kept.)')){ saveDB([]); renderLongIO(); } });
+}
+
+/* ==========================================================================
+   6. CHART OPTIONS + HELPERS
+   ========================================================================== */
+function chartOpts(yTitle,ymin,ymax){ const s={responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12}}},
+  scales:{y:{beginAtZero:ymin===0,title:{display:!!yTitle,text:yTitle}},x:{ticks:{maxRotation:45,minRotation:0}}}};
+  if(ymin!=null)s.scales.y.min=ymin; if(ymax!=null)s.scales.y.max=ymax; return s; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// paired cleaner used in TBL
+Stat.clean2=function(x,y){ const X=[],Y=[]; for(let i=0;i<x.length;i++){ if(x[i]!=null&&y[i]!=null&&!isNaN(x[i])&&!isNaN(y[i])){X.push(x[i]);Y.push(y[i]);} } return {x:X,y:Y}; };
+
+function boxPlotSVG(arr){ const a=Stat.clean(arr); if(a.length<4) return '<p class="sub">Not enough data for a box plot.</p>';
+  const q1=Stat.quantile(a,0.25),med=Stat.median(a),q3=Stat.quantile(a,0.75),iqr=q3-q1;
+  const lo=Math.max(Stat.min(a),q1-1.5*iqr), hi=Math.min(Stat.max(a),q3+1.5*iqr);
+  const outliers=a.filter(v=>v<q1-1.5*iqr||v>q3+1.5*iqr);
+  const W=680,H=110,pad=40,x=v=>pad+(v/100)*(W-2*pad);
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Box and whisker plot. Minimum ${round(lo)}, Q1 ${round(q1)}, median ${round(med)}, Q3 ${round(q3)}, maximum ${round(hi)}.">
+    <line x1="${x(lo)}" y1="55" x2="${x(q1)}" y2="55" stroke="#0B1530" stroke-width="2"/>
+    <line x1="${x(q3)}" y1="55" x2="${x(hi)}" y2="55" stroke="#0B1530" stroke-width="2"/>
+    <line x1="${x(lo)}" y1="42" x2="${x(lo)}" y2="68" stroke="#0B1530" stroke-width="2"/>
+    <line x1="${x(hi)}" y1="42" x2="${x(hi)}" y2="68" stroke="#0B1530" stroke-width="2"/>
+    <rect x="${x(q1)}" y="38" width="${x(q3)-x(q1)}" height="34" fill="#F5F1E8" stroke="#8B3A2E" stroke-width="2"/>
+    <line x1="${x(med)}" y1="38" x2="${x(med)}" y2="72" stroke="#C9A14A" stroke-width="3"/>
+    ${outliers.map(o=>`<circle cx="${x(o)}" cy="55" r="3.5" fill="#8B3A2E"/>`).join('')}
+    ${[0,25,50,75,100].map(t=>`<text x="${x(t)}" y="95" font-size="11" text-anchor="middle" fill="#0B1530">${t}</text>`).join('')}
+    <text x="${x(med)}" y="30" font-size="11" font-weight="700" text-anchor="middle" fill="#8B3A2E">med ${round(med)}</text>
+  </svg><p class="sub" style="margin-top:6px">Min ${round(Stat.min(a))} · Q1 ${round(q1)} · Median ${round(med)} · Q3 ${round(q3)} · Max ${round(Stat.max(a))}${outliers.length?' · '+outliers.length+' outlier(s)':''}</p>`;
+}
+
+/* ==========================================================================
+   7. RENDER ALL + WIRING
+   ========================================================================== */
+function renderAll(){
+  destroyCharts();
+  renderOverview(); renderPerformance(); renderGrowth(); renderCompetency();
+  renderSLO(); renderBehavior(); renderTBL(); renderEngagement(); renderWithdrawal();
+  renderAI(); renderVoice(); renderLongIO();
+  if(document.querySelector('.nav-btn.active')?.dataset.view==='longitudinal') renderLongitudinal();
+  sendHeight();
+}
+
+function setStatus(kind,text){ const p=document.getElementById('statusPill');
+  p.className='status-pill '+(kind==='loaded'?'status-loaded':kind==='demo'?'status-demo':'status-empty'); p.textContent=text; }
+
+function populateTerms(){
+  const sel=document.getElementById('termSel');
+  const years=[2025,2026,2027,2028];
+  const terms=[];
+  years.forEach(y=>{ ['Spring','Summer','Fall'].forEach(s=>terms.push(s+' '+y)); });
+  sel.innerHTML=terms.map(t=>`<option${t==='Summer 2026'?' selected':''}>${t}</option>`).join('');
+  State.term=sel.value;
+  sel.addEventListener('change',()=>{ State.term=sel.value; renderAll(); });
+}
+function populateAssessments(){
+  const sel=document.getElementById('assessSel');
+  if(!State.raw){ sel.innerHTML='<option>—</option>'; return; }
+  sel.innerHTML=State.raw.assessCols.map((c,i)=>`<option value="${esc(c.name)}"${i===State.raw.assessCols.length-1?' selected':''}>${esc(c.name)}</option>`).join('');
+  State.primaryCol=sel.value;
+  sel.onchange=()=>{ State.primaryCol=sel.value; renderAll(); };
+}
+
+/* ---- Demo data (synthetic, anonymized) ---- */
+function loadDemo(){
+  const N=42; const rand=(m,s)=>Math.max(0,Math.min(100,m+s*(Math.random()+Math.random()+Math.random()-1.5)*1.4));
+  const cols=[
+    {name:'Video Completion %',points:100,base:78,sd:16},
+    {name:'Spaced Recall %',points:100,base:70,sd:20},
+    {name:'Exam 1',points:100,base:74,sd:13},
+    {name:'Exam 2',points:100,base:77,sd:12},
+    {name:'Practical 1',points:100,base:80,sd:11},
+    {name:'Exam 3',points:100,base:80,sd:12},
+    {name:'Final Exam',points:100,base:83,sd:11},
+  ];
+  const students=[];
+  for(let i=0;i<N;i++){ const ability=(Math.random()-0.5)*22; const engage=Math.random();
+    const rec={_name:'Student '+String(i+1).padStart(3,'0'),section:'ARC-Online',scores:{}};
+    // simulate disengagement for a subset late in term
+    const dropOut = i%11===0;
+    cols.forEach((c,ci)=>{ let v=rand(c.base+ability+(/%$/.test(c.name)?engage*10:engage*8),c.sd);
+      if(dropOut&&ci>=4){ v=null; } rec.scores[c.name]=v==null?null:Math.round(v); });
+    students.push(rec);
+  }
+  State.raw={assessCols:cols.map(c=>({name:c.name,idx:0,points:c.points})),students:anonymize(students)};
+  // anonymize returns objects with .id not ._name; adapt for parser expectations
+  State.raw.students=State.raw.students.map(s=>({_name:s.id,code:s.code,section:s.section,scores:s.scores}));
+  State.isDemo=true; State.primaryCol='Final Exam'; State.course='BIO 304 (demo)';
+  document.getElementById('courseSel').value='BIO 304 (demo)';
+  populateAssessments(); document.getElementById('assessSel').value='Final Exam'; State.primaryCol='Final Exam';
+  setStatus('demo','Demo data loaded ('+N+' students)');
+  document.getElementById('fileHint').textContent='Showing synthetic, anonymized demo data so every dashboard is populated. Upload your Canvas CSV to replace it.';
+  renderAll();
+}
+
+/* ---- Merge two gradebooks by stable student code ---- */
+function mergeGradebook(existing, incoming){
+  // union of assessment columns, existing order first, then new columns
+  const cols=[...existing.assessCols];
+  incoming.assessCols.forEach(c=>{ if(!cols.some(x=>x.name===c.name)) cols.push(c);
+    else { const ex=cols.find(x=>x.name===c.name); if(ex.points==null&&c.points!=null) ex.points=c.points; } });
+  // index existing students by stable code
+  const byCode=new Map(); existing.students.forEach(s=>byCode.set(s.code,s));
+  incoming.students.forEach(s=>{
+    if(byCode.has(s.code)){ const ex=byCode.get(s.code);
+      // incoming non-empty score wins; keep existing where incoming is blank
+      Object.keys(s.scores).forEach(k=>{ const v=s.scores[k]; if(v!=null&&!isNaN(v)) ex.scores[k]=v; });
+      if(s.section) ex.section=s.section;
+    } else { byCode.set(s.code,s); existing.students.push(s); }
+  });
+  existing.assessCols=cols;
+  return existing;
+}
+
+/* ---- CSV upload flow ---- */
+document.getElementById('csvInput').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const merge=document.getElementById('mergeMode').checked && State.raw && !State.isDemo;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+    const rows=parseCSV(r.result); const gb=analyzeGradebook(rows);
+    if(!gb||!gb.assessCols.length){ alert('Could not find gradeable columns in that file. Is it a Canvas gradebook export?'); return; }
+    gb.students=anonymize(gb.students).map(s=>({_name:s.id,code:s.code,section:s.section,scores:s.scores}));
+    if(merge){
+      const before=State.raw.students.length;
+      mergeGradebook(State.raw, gb);
+      const added=State.raw.students.length-before;
+      populateAssessments();
+      setStatus('loaded',State.raw.students.length+' students · '+State.raw.assessCols.length+' columns (merged)');
+      document.getElementById('fileHint').textContent='Merged '+f.name+' into the current class. '+added+' new student(s) added, existing students updated with the new columns. Nobody was dropped. Save a snapshot per assessment to log your history.';
+    } else {
+      State.raw=gb; State.isDemo=false;
+      populateAssessments();
+      setStatus('loaded',gb.students.length+' students · '+gb.assessCols.length+' columns');
+      document.getElementById('fileHint').textContent='Loaded '+f.name+'. Names were anonymized in your browser and are not stored. Pick the assessment to analyze, then explore the dashboards. Save a snapshot to add this to your longitudinal history.';
+    }
+    document.getElementById('csvInput').value=''; // allow re-upload of same filename
+    renderAll();
+  }catch(err){ alert('Error reading file: '+err.message); } };
+  r.readAsText(f);
+});
+document.getElementById('analyzeBtn').addEventListener('click',()=>{
+  if(!State.raw){ alert('Upload a CSV or load demo data first.'); return; }
+  State.passThresh=parseFloat(document.getElementById('passThresh').value)||60;
+  State.compThresh=parseFloat(document.getElementById('compThresh').value)||80;
+  renderAll(); setStatus(State.isDemo?'demo':'loaded','Analyzed · '+State.term+' · '+State.primaryCol);
+});
+document.getElementById('courseSel').addEventListener('input',e=>{ State.course=e.target.value.trim(); });
+document.getElementById('stageSel').addEventListener('change',e=>{ State.stage=e.target.value; });
+document.getElementById('demoBtn').addEventListener('click',loadDemo);
+document.getElementById('passThresh').addEventListener('change',()=>{ State.passThresh=parseFloat(document.getElementById('passThresh').value)||60; renderAll(); });
+document.getElementById('compThresh').addEventListener('change',()=>{ State.compThresh=parseFloat(document.getElementById('compThresh').value)||80; renderAll(); });
+document.querySelector('.nav-btn[data-view="longitudinal-io"]').addEventListener('click',()=>switchView('longitudinal-io'));
+
+/* ==========================================================================
+   8. INIT + iframe height-sender
+   ========================================================================== */
+function sendHeight(){ const h=Math.max(document.documentElement.scrollHeight, document.body?document.body.scrollHeight:0);
+  parent.postMessage({type:'resize',id:'teaching-effectiveness-dashboard',height:h},'*'); }
+window.addEventListener('load',sendHeight); window.addEventListener('resize',sendHeight);
+if(window.ResizeObserver) new ResizeObserver(sendHeight).observe(document.body);
+
+(function init(){
+  buildNav(); scaffoldViews(); populateTerms(); populateAssessments();
+  // wire the longitudinal-io nav (added separately)
+  renderOverview(); renderVoice(); renderLongIO();
+  setStatus('empty','No data loaded');
+})();
+</script>
+</body>
+</html>
