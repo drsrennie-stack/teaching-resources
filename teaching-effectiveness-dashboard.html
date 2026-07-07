@@ -510,17 +510,18 @@ const Interp = {
    ========================================================================== */
 const VIEWS=[
   {id:'overview',n:'1',t:'Course Overview'},
-  {id:'performance',n:'2',t:'Performance'},
-  {id:'growth',n:'3',t:'Growth'},
-  {id:'competency',n:'4',t:'Competency'},
-  {id:'slo',n:'5',t:'SLO / Outcomes'},
-  {id:'behavior',n:'6',t:'Learning Behavior'},
-  {id:'tbl',n:'7',t:'TBL'},
-  {id:'engagement',n:'8',t:'Engagement'},
-  {id:'withdrawal',n:'9',t:'Withdrawal'},
-  {id:'longitudinal',n:'10',t:'Longitudinal'},
-  {id:'ai',n:'11',t:'AI Instructor Report'},
-  {id:'voice',n:'12',t:'Student Voice'},
+  {id:'insights',n:'2',t:'Insights & Flags'},
+  {id:'performance',n:'3',t:'Performance'},
+  {id:'growth',n:'4',t:'Growth'},
+  {id:'competency',n:'5',t:'Competency'},
+  {id:'slo',n:'6',t:'SLO / Outcomes'},
+  {id:'behavior',n:'7',t:'Learning Behavior'},
+  {id:'tbl',n:'8',t:'TBL'},
+  {id:'engagement',n:'9',t:'Engagement'},
+  {id:'withdrawal',n:'10',t:'Withdrawal'},
+  {id:'longitudinal',n:'11',t:'Longitudinal'},
+  {id:'ai',n:'12',t:'AI Instructor Report'},
+  {id:'voice',n:'13',t:'Student Voice'},
 ];
 let charts={}; // registry to destroy on re-render
 function destroyCharts(){ Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}}); charts={}; }
@@ -604,7 +605,116 @@ function renderOverview(){
     options:chartOpts('%',0,100)});
 }
 
-/* ---------- 2. PERFORMANCE ---------- */
+/* ---------- 2. INSIGHTS & FLAGS ---------- */
+function renderInsights(){
+  const el=document.getElementById('view-insights');
+  const head=pageHead('Insights & Flags','Where you exceed, where you fall short, and whether you are improving',
+    'An automatic read of this assessment against target benchmarks, plus your trajectory over time for this course. Built to be evidence you can keep: green is beating the benchmark, rust is below and worth attention. Nothing here is a verdict on you as a teacher; it is a map of where to look.');
+  if(!State.raw){ el.innerHTML=head+emptyView('Load and analyze an assessment to see your flags and trajectory.'); return; }
+  const pct=currentPct(); const valid=Stat.clean(pct); const d=Stat.describe(pct); const cols=allPct();
+  const passPct=round(100*valid.filter(v=>v>=State.passThresh).length/valid.length);
+  const compPct=round(100*valid.filter(v=>v>=State.compThresh).length/valid.length);
+  const dfwPct=round(100*valid.filter(v=>v<State.passThresh).length/valid.length);
+  // retention proxy from submission presence across columns
+  const nRoster=State.raw.students.length;
+  const lastActive=State.raw.students.filter((s,si)=>cols.some(c=>{ const v=c.pct[si]; return v!=null&&!isNaN(v); })).length;
+  const retention=round(100*lastActive/nRoster);
+  const checks=[];
+  function push(label,valTxt,status,note,rec){ checks.push({label,valTxt,status,note,rec}); }
+  function band(v,dir,exceedAt,belowAt){ if(dir>0) return v>=exceedAt?'exceed':v<belowAt?'below':'ontrack';
+    return v<=exceedAt?'exceed':v>belowAt?'below':'ontrack'; }
+  push('Passing rate',passPct+'%',band(passPct,1,85,70),'Share at or above your pass line ('+State.passThresh+'%).',
+    'Run a targeted review for the below-passing group before the next assessment.');
+  push('Competency / mastery',compPct+'%',band(compPct,1,75,55),'Share reaching mastery ('+State.compThresh+'%).',
+    'Add low-stakes spaced-recall checkpoints to move more students to mastery.');
+  push('DFW rate',dfwPct+'%',band(dfwPct,-1,10,20),'Share below passing on this assessment (lower is better).',
+    'Identify non-submitters and at-risk students now for direct outreach.');
+  push('Class mean',round(d.mean)+'%',band(d.mean,1,State.compThresh,State.passThresh),'Average score against your competency line.',
+    'Revisit the hardest topics with a reteach or worked-example session.');
+  push('Consistency (CV)',round(d.cv)+'%',band(d.cv,-1,15,25),'Spread of scores. Under ~15% is a tight, consistent class.',
+    'Scores are widely split; differentiate for the struggling group.');
+  if(cols.length>=2){ const ptg=Stat.pairedT(cols[0].pct,cols[cols.length-1].pct);
+    push('Growth across the term',(ptg.meanDiff>=0?'+':'')+round(ptg.meanDiff)+' pts',band(ptg.meanDiff,1,5,0),
+      'Average change from '+esc(cols[0].name)+' to '+esc(cols[cols.length-1].name)+'.',
+      'Students are not gaining between assessments; check that feedback reaches them in time.'); }
+  push('Retention',retention+'%',band(retention,1,90,80),'Share still submitting at the latest assessment.',
+    'The withdrawal dashboard shows where attrition clusters for earlier intervention.');
+  // per-assessment weakest/strongest competency
+  if(cols.length>=2){ const comps=cols.map(c=>{ const v=Stat.clean(c.pct); return {name:c.name,pct:v.length?round(100*v.filter(x=>x>=State.compThresh).length/v.length):0}; });
+    const weak=comps.reduce((a,b)=>b.pct<a.pct?b:a), strong=comps.reduce((a,b)=>b.pct>a.pct?b:a);
+    push('Strongest assessment',esc(strong.name)+' ('+strong.pct+'% competent)','exceed','Your highest-mastery assessment.',null);
+    push('Weakest assessment',esc(weak.name)+' ('+weak.pct+'% competent)',weak.pct<55?'below':'ontrack','Lowest-mastery assessment, a candidate for redesign.',
+      'Review '+esc(weak.name)+': content, question quality, and time-on-task.'); }
+  // SLO outcomes if mapped for this course
+  const sloMap=currentSLOMap(); const sloOutcomes=[...new Set(Object.entries(sloMap).filter(([k])=>k!=='__thresh').map(([,v])=>v))];
+  if(sloOutcomes.length){ const th=sloMap.__thresh||75;
+    sloOutcomes.forEach(o=>{ const oCols=Object.entries(sloMap).filter(([k,v])=>k!=='__thresh'&&v===o).map(([k])=>k);
+      const avgs=[]; State.raw.students.forEach((s,si)=>{ const vs=oCols.map(cn=>{ const c=State.raw.assessCols.find(x=>x.name===cn); return c?toPercent(State.raw.students,cn,c.points)[si]:null; }).filter(v=>v!=null&&!isNaN(v)); if(vs.length)avgs.push(Stat.mean(vs)); });
+      if(avgs.length){ const meet=round(100*avgs.filter(v=>v>=th).length/avgs.length);
+        push('SLO: '+esc(o),meet+'% meeting',band(meet,1,85,70),'Students at or above the '+th+'% mastery bar for this outcome.',
+          'Outcome "'+esc(o)+'" is below mastery; target it for redesign next term.'); } }); }
+
+  const exceed=checks.filter(c=>c.status==='exceed'), ontrack=checks.filter(c=>c.status==='ontrack'), below=checks.filter(c=>c.status==='below');
+  const card=(title,list,accent,empty)=>`<div class="card"><h3>${title} <span class="badge ${accent}">${list.length}</span></h3>
+    ${list.length?`<table class="tbl"><tbody>${list.map(c=>`<tr><td style="width:210px"><strong>${c.label}</strong><br><span style="font-size:12px;opacity:0.7">${c.note}</span></td>
+      <td class="num" style="font-size:16px">${c.valTxt}</td></tr>`).join('')}</tbody></table>`:`<p class="sub">${empty}</p>`}</div>`;
+
+  // ---- Trajectory over time for this course (from saved snapshots) ----
+  const traj=trajectoryCard();
+
+  el.innerHTML=head+`
+    <div class="grid g3">
+      ${statTile('Exceeding',exceed.length,'benchmarks beaten','accent-gold')}
+      ${statTile('On track',ontrack.length,'near target','accent-navy')}
+      ${statTile('Below target',below.length,'worth attention','accent-rust')}
+    </div>
+    <div style="margin-top:16px">${card('Exceeds expectations',exceed,'b-comp','No benchmarks exceeded yet this assessment.')}</div>
+    <div style="margin-top:16px">${card('Below expectations',below,'b-below','Nothing below benchmark. Strong result.')}</div>
+    <div style="margin-top:16px">${card('On track',ontrack,'b-near','—')}</div>
+    ${below.length?`<div class="card" style="margin-top:16px"><h3>What to consider</h3>
+      <p class="sub">Options for the below-target areas. Yours to weigh, not prescriptions.</p>
+      <ul style="margin:0;padding-left:20px;font-size:13.5px">${below.filter(c=>c.rec).map(c=>`<li style="margin-bottom:7px"><strong>${c.label}:</strong> ${c.rec}</li>`).join('')}</ul></div>`:''}
+    ${traj}
+    <div class="card" style="margin-top:16px"><h3>Effectiveness summary</h3>
+      <p class="sub">A defensible, plain-language statement of this result. Copy it into a portfolio, self-evaluation, or reply to a chair.</p>
+      <textarea id="effText" style="width:100%;min-height:150px;font:inherit;font-size:13.5px;line-height:1.6;padding:14px;border:1px solid var(--line-strong);border-radius:8px;color:var(--navy)" readonly>${esc(effectivenessStatement(passPct,compPct,dfwPct,d,retention))}</textarea>
+      <div style="margin-top:10px"><button class="btn btn-gold" id="effCopy">Copy summary</button></div></div>`;
+  const cp=document.getElementById('effCopy'); if(cp) cp.addEventListener('click',()=>{ const t=document.getElementById('effText'); t.select(); document.execCommand('copy'); cp.textContent='Copied'; setTimeout(()=>cp.textContent='Copy summary',1500); });
+}
+function trajectoryCard(){
+  const db=loadDB().filter(s=>s.course===(State.course||'(unlabeled)')).sort((a,b)=>termOrder(a.term)-termOrder(b.term));
+  // collapse to one point per term (avg of that term's snapshots)
+  const terms=[...new Set(db.map(s=>s.term))];
+  if(terms.length<2){ return `<div class="card" style="margin-top:16px"><h3>Your trajectory over time</h3>
+    <p class="sub">Save a snapshot each term for ${esc(State.course||'this course')} and this becomes your "am I getting better?" record. Right now there ${terms.length===1?'is 1 term':'are 0 terms'} saved for this course, so there is not yet a trend. The Longitudinal page has the full progress board.</p></div>`; }
+  const series=terms.map(t=>{ const rows=db.filter(s=>s.term===t); return {term:t,
+    mean:round(Stat.mean(rows.map(r=>r.mean))), comp:round(Stat.mean(rows.map(r=>r.compPct))), dfw:round(Stat.mean(rows.map(r=>r.dfwPct))), ret:null}; });
+  const first=series[0], last=series[series.length-1];
+  const dMean=round(last.mean-first.mean), dComp=round(last.comp-first.comp), dDfw=round(last.dfw-first.dfw);
+  const arr=(delta,dir)=>{ const good=(delta*dir)>0; const flat=Math.abs(delta)<0.5; const sym=flat?'→':delta>0?'▲':'▼';
+    const col=flat?'#7a5f1e':good?'#2E7D5B':'#8B3A2E'; return '<span style="color:'+col+';font-weight:800">'+sym+' '+(delta>0?'+':'')+delta+'</span>'; };
+  const verdict = (dMean>1||dComp>3) ? 'Your trend is upward: this course is performing better than when you started tracking.'
+    : (dMean< -1||dComp< -3) ? 'Your trend is downward on these measures. The change log and progress board help you see what shifted.'
+    : 'Your results are holding steady across terms, which is itself evidence of consistent, reliable teaching.';
+  return `<div class="card" style="margin-top:16px"><h3>Your trajectory over time — ${esc(State.course||'course')}</h3>
+    <p class="sub">Comparing your first saved term (${esc(first.term)}) to your latest (${esc(last.term)}). Green means the change is the direction you want.</p>
+    <table class="tbl"><thead><tr><th>Measure</th><th>${esc(first.term)}</th><th>${esc(last.term)}</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td>Class mean</td><td class="num">${first.mean}%</td><td class="num">${last.mean}%</td><td class="num">${arr(dMean,1)}</td></tr>
+        <tr><td>Competency</td><td class="num">${first.comp}%</td><td class="num">${last.comp}%</td><td class="num">${arr(dComp,1)}</td></tr>
+        <tr><td>DFW</td><td class="num">${first.dfw}%</td><td class="num">${last.dfw}%</td><td class="num">${arr(dDfw,-1)}</td></tr>
+      </tbody></table>
+    ${interpBox(verdict+' Open the Longitudinal page for the full progress board and control chart.')}</div>`;
+}
+function effectivenessStatement(passPct,compPct,dfwPct,d,retention){
+  const c=State.course||'this course', t=State.term, a=State.primaryCol;
+  return `In ${c} (${t}), on ${a}, students achieved a class mean of ${round(d.mean)}% (median ${round(d.median)}%, SD ${round(d.sd)}). `
+    +`${passPct}% met the passing standard and ${compPct}% reached competency, with a DFW rate of ${dfwPct}% and ${retention}% retention through the latest assessment. `
+    +`Scores show ${d.cv<15?'high consistency':d.cv<25?'moderate spread':'wide spread'} (CV ${round(d.cv)}%). `
+    +`These figures are captured after each assessment and aggregated across terms to document instructional effectiveness over time, using anonymized, aggregate data suitable for program review, SoTL, and evaluation.`;
+}
+
+/* ---------- 3. PERFORMANCE ---------- */
 function renderPerformance(){
   const el=document.getElementById('view-performance');
   let head=pageHead('Performance','Full descriptive picture of this assessment',
@@ -1643,7 +1753,7 @@ function boxPlotSVG(arr){ const a=Stat.clean(arr); if(a.length<4) return '<p cla
    ========================================================================== */
 function renderAll(){
   destroyCharts();
-  renderOverview(); renderPerformance(); renderGrowth(); renderCompetency();
+  renderOverview(); renderInsights(); renderPerformance(); renderGrowth(); renderCompetency();
   renderSLO(); renderBehavior(); renderTBL(); renderEngagement(); renderWithdrawal();
   renderAI(); renderVoice(); renderLongIO();
   if(document.querySelector('.nav-btn.active')?.dataset.view==='longitudinal') renderLongitudinal();
