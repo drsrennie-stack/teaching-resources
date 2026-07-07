@@ -476,6 +476,10 @@ function makeSnapshot(){
   };
 }
 const round = (x,p=1)=> (x==null||isNaN(x))?null:Math.round(x*10**p)/10**p;
+// Save the current analysis as a snapshot (dedupe on course+term+stage+assessment)
+function saveCurrentSnapshot(){ const snap=makeSnapshot(); if(!snap) return null;
+  const db=loadDB(); const ix=db.findIndex(s=>s.course===snap.course&&s.term===snap.term&&s.stage===snap.stage&&s.assessment===snap.assessment);
+  if(ix>=0)db[ix]=snap; else db.push(snap); saveDB(db); return snap; }
 
 /* ==========================================================================
    4. INTERPRETATION ENGINE  ("so what")
@@ -923,32 +927,90 @@ function renderBehaviorBody(xi,yi){
       plugins:{legend:{display:true,position:'bottom'}}}});
 }
 
-/* ---------- 6. TBL ---------- */
+/* ---------- 7. TBL ---------- */
+const TBL_KEY='ted_tbl_maps_v1';
+function loadTBLMaps(){ try{ return JSON.parse(localStorage.getItem(TBL_KEY))||{}; }catch(e){ return {}; } }
+function saveTBLMaps(m){ try{ localStorage.setItem(TBL_KEY, JSON.stringify(m)); }catch(e){ alert('Could not save TBL map: '+e.message); } }
+function currentTBLMap(){ return loadTBLMaps()[State.course||'(unlabeled)']||{}; }
+function persistTBLMap(map){ const all=loadTBLMaps(); all[State.course||'(unlabeled)']=map; saveTBLMaps(all); }
+function tblGuess(name){ const n=String(name);
+  if(/\btbl\b|team[\s._-]?based\s*learning|team[\s._-]?based/i.test(n)) return 'TBL';
+  if(/\bi[\s._-]?rat\b|individual readiness|individual rat|\birat/i.test(n)) return 'IRAT';
+  if(/\bt[\s._-]?rat\b|\bg[\s._-]?rat\b|team readiness|group readiness|team rat|group rat|\btrat|\bgrat/i.test(n)) return 'TRAT';
+  if(/\bp[\s._-]?rat\b|\bprat|practice rat|prep(aration)? rat|peer rat/i.test(n)) return 'PRAT';
+  if(/applic|app exercise|\b4s\b|team app|tapp|readiness application/i.test(n)) return 'Application';
+  return null; }
 function renderTBL(){
   const el=document.getElementById('view-tbl');
-  let head=pageHead('Team-Based Learning','Does TBL predict success?',
-    'Detects IRAT, TRAT, and application columns by name and correlates them with lecture/practical outcomes. If your export has no TBL columns, this stays empty (BIO 304 online has no TBL).');
+  const head=pageHead('Team-Based Learning','Does TBL predict success?',
+    'Tag your readiness and application columns, then this correlates them with a lecture or practical outcome. It auto-detects from column names where it can; use the dropdowns to mark anything it missed. The mapping is saved per course.');
   if(!State.raw){ el.innerHTML=head+emptyView('No data loaded yet.'); return; }
   const cols=State.raw.assessCols;
-  const find=re=>cols.filter(c=>re.test(c.name));
-  const irat=find(/irat/i), trat=find(/trat/i), app=find(/applic|4s|team app/i);
-  const outcome=cols.find(c=>/final|practical|exam/i.test(c.name))||cols[cols.length-1];
-  if(!irat.length&&!trat.length&&!app.length){ el.innerHTML=head+emptyView('No TBL columns (IRAT / TRAT / application) found in this upload. This dashboard populates automatically when they are present.'); return; }
-  function meanCol(c){ return round(Stat.mean(Stat.clean(toPercent(State.raw.students,c.name,c.points)))); }
-  const rows=[]; [['IRAT',irat],['TRAT',trat],['Application',app]].forEach(([lab,arr])=>{
-    arr.forEach(c=>{ const xa=toPercent(State.raw.students,c.name,c.points);
-      const ya=toPercent(State.raw.students,outcome.name,outcome.points);
-      const r=Stat.pearson(Stat.clean2(xa,ya).x,Stat.clean2(xa,ya).y);
-      rows.push({type:lab,name:c.name,mean:meanCol(c),r:round(r.r,2),p:round(r.p,3)}); }); });
+  const saved=currentTBLMap();
+  const outcomeDefault=(saved.__outcome&&cols.some(c=>c.name===saved.__outcome))?saved.__outcome
+    :(cols.find(c=>/final|practical|exam|score/i.test(c.name))||cols[cols.length-1]).name;
+  const opts=['','TBL','IRAT','TRAT','PRAT','Application'];
+  const noneSaved=Object.keys(saved).filter(k=>k!=='__outcome').length===0;
   el.innerHTML=head+`
-    <div class="grid g3">
-      ${statTile('IRAT avg',irat.length?meanCol(irat[0])+'%':'—','Individual readiness','accent-navy')}
-      ${statTile('TRAT avg',trat.length?meanCol(trat[0])+'%':'—','Team readiness','accent-gold')}
-      ${statTile('Application avg',app.length?meanCol(app[0])+'%':'—','4S activities','accent-rust')}
+    <div class="controls"><div class="controls-row">
+      <div class="field"><label for="tblOutcome">Outcome column</label>
+        <select id="tblOutcome">${cols.map(c=>`<option${c.name===outcomeDefault?' selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+      <button class="btn btn-ghost" id="tblSuggest">Auto-detect from names</button>
+      <button class="btn btn-gold" id="tblSave">Save mapping for ${esc(State.course||'this course')}</button>
     </div>
+    <p class="file-hint">Every numeric column from your upload is listed below. If you upload one pre-combined score, just tag the column named "TBL" or "Team Based Learning". If you upload the pieces separately ("iRAT 1", "Team RAT", "PRAT", "Application 2"), auto-detect should catch them and the dashboard builds the combined Overall TBL for you. Fix anything by hand.</p>
+    </div>
+    <div class="card"><h3>Tag your TBL columns</h3><p class="sub">Mark each readiness/application column. Leave everything else as None.</p>
+      <table class="tbl"><thead><tr><th>Column</th><th>TBL type</th></tr></thead>
+      <tbody>${cols.map(c=>{ const val=saved[c.name]||(noneSaved?(tblGuess(c.name)||''):'');
+        return `<tr><td>${esc(c.name)}</td><td><select class="tbl-in" data-col="${esc(c.name)}">${opts.map(o=>`<option value="${o}"${o===val?' selected':''}>${o||'None'}</option>`).join('')}</select></td></tr>`; }).join('')}</tbody></table>
+    </div>
+    <div id="tblResults"></div>`;
+  document.getElementById('tblOutcome').addEventListener('change',renderTBLResults);
+  document.querySelectorAll('.tbl-in').forEach(s=>s.addEventListener('change',renderTBLResults));
+  document.getElementById('tblSuggest').addEventListener('click',()=>{ let n=0;
+    document.querySelectorAll('.tbl-in').forEach(s=>{ const g=tblGuess(s.dataset.col); if(g){ s.value=g; n++; } }); renderTBLResults();
+    alert(n?('Detected '+n+' TBL column'+(n>1?'s':'')+'. Review and Save.'):'No IRAT/TRAT/Application keywords found in the column names. Tag them with the dropdowns.'); });
+  document.getElementById('tblSave').addEventListener('click',()=>{ const m={__outcome:document.getElementById('tblOutcome').value};
+    document.querySelectorAll('.tbl-in').forEach(s=>{ if(s.value)m[s.dataset.col]=s.value; }); persistTBLMap(m);
+    alert('TBL mapping saved for '+(State.course||'this course')+'. It loads automatically next time.'); });
+  renderTBLResults();
+}
+const TBL_SUB={TBL:'Combined TBL score',IRAT:'Individual readiness',TRAT:'Team readiness',PRAT:'PRAT readiness',Application:'4S / application'};
+function renderTBLResults(){
+  const host=document.getElementById('tblResults'); if(!host) return;
+  const cols=State.raw.assessCols; const students=State.raw.students;
+  const outcome=cols.find(c=>c.name===document.getElementById('tblOutcome').value)||cols[cols.length-1];
+  const TYPES=['TBL','IRAT','TRAT','PRAT','Application'];
+  const typed={TBL:[],IRAT:[],TRAT:[],PRAT:[],Application:[]};
+  document.querySelectorAll('.tbl-in').forEach(s=>{ if(s.value&&typed[s.value]){ const c=cols.find(x=>x.name===s.dataset.col); if(c)typed[s.value].push(c); } });
+  const typesPresent=TYPES.filter(t=>typed[t].length);
+  if(!typesPresent.length){
+    host.innerHTML=emptyView('No columns tagged as TBL yet. If you upload a single combined score, tag the column named "TBL". Otherwise tag your IRAT/TRAT/PRAT/Application columns with the dropdowns above (or click Auto-detect).'); return; }
+  const meanCol=c=>round(Stat.mean(Stat.clean(toPercent(students,c.name,c.points))));
+  const avg=t=>typed[t].length?round(Stat.mean(typed[t].map(meanCol))):null;
+  const outPct=toPercent(students,outcome.name,outcome.points);
+  const allCols=typesPresent.flatMap(t=>typed[t]);
+  const combined=allCols.length>1; // only build a composite when more than one column is tagged
+  const rows=[];
+  if(combined){
+    const comp=students.map((s,si)=>{ const vals=allCols.map(c=>toPercent(students,c.name,c.points)[si]).filter(v=>v!=null&&!isNaN(v)); return vals.length?Stat.mean(vals):null; });
+    const overallMean=round(Stat.mean(Stat.clean(comp)));
+    const cc=Stat.clean2(comp,outPct); const cr=Stat.pearson(cc.x,cc.y);
+    rows.push({type:'Overall TBL',name:allCols.length+' columns combined',mean:overallMean,r:round(cr.r,2),p:round(cr.p,3),bold:true});
+    State._tblOverall=overallMean;
+  } else State._tblOverall=null;
+  typesPresent.forEach(t=>typed[t].forEach(c=>{
+    const cc=Stat.clean2(toPercent(students,c.name,c.points),outPct);
+    const r=Stat.pearson(cc.x,cc.y); rows.push({type:t,name:c.name,mean:meanCol(c),r:round(r.r,2),p:round(r.p,3)}); }));
+  const tiles=(combined?[statTile('Overall TBL avg',State._tblOverall+'%','Combined '+typesPresent.join(' + '),'accent-gold')]:[])
+    .concat(typesPresent.map(t=>statTile(t+' avg',avg(t)+'%',TBL_SUB[t],combined?'accent-navy':'accent-gold')));
+  host.innerHTML=`
+    <div class="grid g4">${tiles.join('')}</div>
     <div class="card" style="margin-top:16px"><h3>TBL correlation with ${esc(outcome.name)}</h3>
+      <p class="sub">${combined?'Overall TBL is each student’s average across all tagged columns, correlated with the outcome.':'Your combined TBL column correlated with the outcome.'}</p>
       <table class="tbl"><thead><tr><th>Type</th><th>Column</th><th>Mean</th><th>r with outcome</th><th>p</th></tr></thead>
-      <tbody>${rows.map(r=>`<tr><td>${r.type}</td><td>${esc(r.name)}</td><td class="num">${r.mean}%</td>
+      <tbody>${rows.map(r=>`<tr><td>${r.bold?'<strong>'+r.type+'</strong>':r.type}</td><td>${esc(r.name)}</td><td class="num">${r.mean}%</td>
         <td class="num">${r.r}</td><td class="num">${r.p}</td></tr>`).join('')}</tbody></table>
       ${interpBox(tblInterp(rows))}</div>`;
 }
@@ -1244,7 +1306,18 @@ function renderLongitudinal(){
   const db=loadDB();
   let head=pageHead('Longitudinal','Compare courses and semesters, and track your progress',
     'Pick exactly which semesters to compare, slice by course, and watch the progress board to see whether each cohort is improving against your baseline and your ideal target. Only anonymized aggregates are stored.');
-  if(!db.length){ el.innerHTML=head+emptyView('No snapshots saved yet. Analyze an assessment, tag it with a course and term, then use "Save snapshot" on the Longitudinal database page to start building history.'); return; }
+  if(!db.length){
+    const canSave=State.raw&&State.primaryCol;
+    el.innerHTML=head+`<div class="empty-note" style="text-align:left">
+      <p style="margin:0 0 12px"><strong>No snapshots saved yet.</strong> The semester picker and progress board appear here as soon as you save your first snapshot.</p>
+      <p style="margin:0 0 16px">A snapshot is the anonymized class summary for one course + term + stage + assessment. ${canSave?'You currently have <strong>'+esc(State.course||'(untagged course)')+' · '+esc(State.term)+' · '+esc(State.stage)+' · '+esc(State.primaryCol)+'</strong> analyzed and ready to save.':'Upload a Canvas CSV and click <strong>Analyze assessment</strong> first, and set the Course and Term at the top.'}</p>
+      ${canSave?'<button class="btn btn-primary" id="longQuickSave">Save this analysis as a snapshot</button> <span id="longQuickMsg" style="margin-left:10px;font-weight:700;color:var(--good)"></span>':''}
+      <p class="sub" style="margin-top:14px">To compare across semesters, repeat for each term: load its CSV, set the term up top, Analyze, and save. Then the checkboxes and progress board appear here.</p>
+    </div>`;
+    if(canSave){ document.getElementById('longQuickSave').addEventListener('click',()=>{
+      const s=saveCurrentSnapshot(); if(s){ renderLongitudinal(); } else { alert('Analyze an assessment first.'); } }); }
+    return;
+  }
   const courses=['All',...new Set(db.map(s=>s.course||'(unlabeled)'))];
   const stages=['All',...new Set(db.map(s=>s.stage||'(unstaged)'))];
   const allTerms=[...new Set(db.map(s=>s.term))].sort((a,b)=>termOrder(a)-termOrder(b));
