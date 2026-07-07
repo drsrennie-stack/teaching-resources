@@ -239,6 +239,7 @@ input[type=file]{position:absolute;width:1px;height:1px;padding:0;margin:-1px;ov
         </label>
         <input type="file" id="csvInput" accept=".csv,text/csv" aria-label="Upload Canvas gradebook CSV">
         <button class="btn btn-gold" id="analyzeBtn">Analyze assessment</button>
+        <button class="btn btn-primary" id="saveSnapTop">Save snapshot</button>
         <button class="btn btn-ghost" id="demoBtn">Load demo data</button>
         <label style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--navy);cursor:pointer">
           <input type="checkbox" id="mergeMode"> Merge into current class (keep all students)
@@ -484,7 +485,9 @@ function saveCurrentSnapshot(){ const snap=makeSnapshot(); if(!snap) return null
     if(!confirm('A snapshot already exists for:\n\n'+snap.course+'  ·  '+snap.term+'  ·  '+snap.stage+'  ·  '+snap.assessment+'\n\nSaving now will OVERWRITE it.\n\nIf you meant to log a DIFFERENT semester, click Cancel, then change the Semester/Term (and Stage) at the top of the page first, then Save again.\n\nOverwrite the existing snapshot?')) return 'cancelled';
     db[ix]=snap;
   } else db.push(snap);
-  saveDB(db); return snap; }
+  saveDB(db);
+  try{ longFilter.terms=null; }catch(e){} // so a newly added semester shows on the progress board
+  return snap; }
 
 /* ==========================================================================
    4. INTERPRETATION ENGINE  ("so what")
@@ -1870,6 +1873,16 @@ document.getElementById('analyzeBtn').addEventListener('click',()=>{
 });
 document.getElementById('courseSel').addEventListener('input',e=>{ State.course=e.target.value.trim(); });
 document.getElementById('stageSel').addEventListener('change',e=>{ State.stage=e.target.value; });
+document.getElementById('saveSnapTop').addEventListener('click',()=>{
+  if(!State.raw){ alert('Upload a Canvas CSV and click Analyze first.'); return; }
+  const s=saveCurrentSnapshot();
+  if(s==='cancelled') return;
+  if(!s){ alert('Analyze an assessment first.'); return; }
+  setStatus(State.isDemo?'demo':'loaded','Snapshot saved · '+s.term+' · '+s.assessment);
+  alert('Snapshot saved:\n\n'+s.course+'  ·  '+s.term+'  ·  '+s.stage+'  ·  '+s.assessment+'\n\nOpen the Longitudinal page to see it in your history.');
+  renderLongIO();
+  if(document.getElementById('view-longitudinal').classList.contains('active')) renderLongitudinal();
+});
 document.getElementById('demoBtn').addEventListener('click',loadDemo);
 document.getElementById('passThresh').addEventListener('change',()=>{ State.passThresh=parseFloat(document.getElementById('passThresh').value)||60; renderAll(); });
 document.getElementById('compThresh').addEventListener('change',()=>{ State.compThresh=parseFloat(document.getElementById('compThresh').value)||80; renderAll(); });
